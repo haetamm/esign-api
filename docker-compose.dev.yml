@@ -1,0 +1,35 @@
+version: "3.9"
+
+name: esign-dev
+
+services:
+
+  # PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: esign-postgres-dev
+    environment:
+      POSTGRES_USER: developer
+      POSTGRES_PASSWORD: rahasia
+      POSTGRES_DB: esign-db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - esign-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U developer -d esign-db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  esign-network:
+    driver: bridge
+    name: esign-network-dev
+
+volumes:
+  postgres-data:
+    name: esign-postgres-data
