@@ -1,12 +1,17 @@
 package com.esign.helper;
 
 import com.esign.entities.PaginationResponse;
+import com.esign.entities.WebErrorResponse;
 import com.esign.entities.WebResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.function.Supplier;
 
@@ -15,6 +20,7 @@ public class Utilities {
 
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public static String generateRandomString(int length) {
         StringBuilder sb = new StringBuilder(length);
@@ -38,6 +44,18 @@ public class Utilities {
 
     public <T> ResponseEntity<WebResponse<T>> handleRequest(Supplier<T> requestHandler, HttpStatus status, String message) {
         return handleRequest(requestHandler, status, message, null);
+    }
+
+    public void writeError(HttpServletResponse response, HttpStatus status, String message) throws IOException {
+        response.setStatus(status.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+
+        WebErrorResponse<String> errorResponse = new WebErrorResponse<>();
+        errorResponse.setCode(status.value());
+        errorResponse.setStatus(status.name());
+        errorResponse.setMessages(message);
+
+        objectMapper.writeValue(response.getWriter(), errorResponse);
     }
 
 }

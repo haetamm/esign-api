@@ -1,7 +1,11 @@
 package com.esign.security;
 
 import com.esign.constant.ActionType;
+import com.esign.constant.StatusMessage;
+import com.esign.entities.WebErrorResponse;
+import com.esign.helper.Utilities;
 import com.esign.repository.RolePermissionRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -26,6 +31,7 @@ import java.util.List;
 public class AuthorizationFilter extends OncePerRequestFilter {
 
     private final RolePermissionRepository rolePermissionRepository;
+    private final Utilities utilities;
 
     private static final List<String> PUBLIC_URLS = List.of(
             "/api/auth/login",
@@ -51,7 +57,7 @@ public class AuthorizationFilter extends OncePerRequestFilter {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            response.sendError(HttpStatus.UNAUTHORIZED.value(), "Unauthorized");
+            utilities.writeError(response, HttpStatus.UNAUTHORIZED, StatusMessage.UNAUTHORIZED);
             return;
         }
 
@@ -61,7 +67,7 @@ public class AuthorizationFilter extends OncePerRequestFilter {
                 .toList();
 
         // convert HTTP method ke ActionType
-        ActionType requiredAction = mapHttpMethodToAction(httpMethod);
+        ActionType requiredAction = mapHttpMethodToAction(httpMethod, requestUrl);
 
         // cek apakah role user punya permission untuk url + action ini
         boolean hasPermission = rolePermissionRepository
@@ -72,14 +78,18 @@ public class AuthorizationFilter extends OncePerRequestFilter {
                 );
 
         if (!hasPermission) {
-            response.sendError(HttpStatus.FORBIDDEN.value(), "Access Denied");
+            utilities.writeError(response, HttpStatus.FORBIDDEN, StatusMessage.ACCESS_DENIED);
             return;
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private ActionType mapHttpMethodToAction(String method) {
+    private ActionType mapHttpMethodToAction(String method, String url) {
+        if (url.contains("/approve")) {
+            return ActionType.APPROVE;
+        }
+
         return switch (method.toUpperCase()) {
             case "POST"   -> ActionType.CREATE;
             case "PUT",
@@ -89,7 +99,7 @@ public class AuthorizationFilter extends OncePerRequestFilter {
         };
     }
 
-    // "/api/users/123" → "/api/users"
+    // "/api/user/123" → "/api/user"
     private String extractBaseUrl(String url) {
         String[] parts = url.split("/");
         if (parts.length >= 3) {

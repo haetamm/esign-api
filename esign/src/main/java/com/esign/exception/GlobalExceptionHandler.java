@@ -5,6 +5,7 @@ import com.esign.entities.WebErrorResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -31,9 +32,9 @@ public class GlobalExceptionHandler {
         return createErrorResponse(HttpStatus.NOT_FOUND, exception.getMessage() != null ? exception.getMessage() : "Not Found");
     }
 
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<WebErrorResponse<String>> handleBadRequestException(BadRequestException exception) {
-        return createErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage() != null ? exception.getMessage() : "Bad Request");
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<WebErrorResponse<String>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        return createErrorResponse(HttpStatus.BAD_REQUEST, "Invalid format input: " + ex.getMostSpecificCause().getMessage());
     }
 
     @ExceptionHandler(UnauthorizedException.class)

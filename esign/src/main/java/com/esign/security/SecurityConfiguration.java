@@ -1,5 +1,7 @@
 package com.esign.security;
 
+import com.esign.constant.StatusMessage;
+import com.esign.helper.Utilities;
 import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -21,6 +23,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfiguration {
     private final AuthenticationFilter authenticationFilter;
     private final AuthorizationFilter authorizationFilter;
+    private final Utilities utilities;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity security) throws Exception {
@@ -30,7 +33,11 @@ public class SecurityConfiguration {
                 .sessionManagement(cfg -> cfg.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) ->
-                                response.sendError(HttpStatus.UNAUTHORIZED.value(), "Unauthorized"))
+                                utilities.writeError(response, HttpStatus.UNAUTHORIZED, StatusMessage.UNAUTHORIZED)
+                        )
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                utilities.writeError(response, HttpStatus.FORBIDDEN, StatusMessage.ACCESS_DENIED)
+                        )
                 )
                 .authorizeHttpRequests(req -> req
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()

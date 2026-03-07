@@ -1,6 +1,8 @@
 package com.esign.service.impl;
 
 import com.esign.constant.ActionType;
+import com.esign.constant.ApiUrl;
+import com.esign.constant.RoleName;
 import com.esign.entities.user.LoginRequest;
 import com.esign.entities.user.LoginResponse;
 import com.esign.model.*;
@@ -35,6 +37,7 @@ public class AuthServiceImpl implements AuthService {
     private final RoleRepository roleRepository;
     private final RolePermissionRepository rolePermissionRepository;
     private final UserRoleRepository userRoleRepository;
+    private final ProfileRepository profileRepository;
 
 
     @Value("${esign_api.super-admin.name}")
@@ -59,10 +62,9 @@ public class AuthServiceImpl implements AuthService {
 
     private void seedPermissions() {
         List<String> urls = List.of(
-                "/api/user",
-                "/api/auth",
-                "/api/role",
-                "/api/permission"
+                ApiUrl.API_URL + ApiUrl.API_ROLE,
+                ApiUrl.API_URL + ApiUrl.API_USER,
+                ApiUrl.API_URL + ApiUrl.API_PROFILE
         );
 
         for (String url : urls) {
@@ -81,18 +83,25 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void seedRoles() {
-        boolean exists = roleRepository.existsByName("SUPER_ADMIN");
-        if (exists) return;
+        // buat role jika belum ada
+        Role superAdminRole = roleRepository.findByName(RoleName.SUPER_ADMIN)
+                .orElseGet(() -> roleRepository.save(
+                        Role.builder()
+                                .name(RoleName.SUPER_ADMIN)
+                                .build()
+                ));
 
-        Role superAdminRole = roleRepository.save(
-                Role.builder()
-                        .name("SUPER_ADMIN")
-                        .build()
-        );
-
-        // assign semua permission ke SUPER_ADMIN
         List<Permission> allPermissions = permissionRepository.findAll();
-        for (Permission permission : allPermissions) {
+        List<Permission> existingPermissions = rolePermissionRepository.findByRole(superAdminRole)
+                .stream()
+                .map(RolePermission::getPermission)
+                .toList();
+
+        List<Permission> newPermissions = allPermissions.stream()
+                .filter(p -> !existingPermissions.contains(p))
+                .toList();
+
+        for (Permission permission : newPermissions) {
             rolePermissionRepository.save(
                     RolePermission.builder()
                             .role(superAdminRole)
@@ -106,11 +115,17 @@ public class AuthServiceImpl implements AuthService {
         boolean exists = userRepository.existsByUsername(superAdminUsername);
         if (exists) return;
 
+        Profile profile = profileRepository.save(Profile.builder()
+                .name(superAdminName)
+                .gender("Laki Laki")
+                .build());
+
         User superAdmin = userRepository.save(
                 User.builder()
                         .username(superAdminUsername)
                         .email(superAdminEmail)
                         .password(passwordEncoder.encode(superAdminPassword))
+                        .profile(profile)
                         .isEnable(true)
                         .build()
         );

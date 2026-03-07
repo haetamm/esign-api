@@ -59,6 +59,10 @@ public class User  implements UserDetails {
         updatedAt = LocalDateTime.now();
     }
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "profile_id", referencedColumnName = "id", nullable = false)
+    private Profile profile;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<UserRole> userRoles;
 

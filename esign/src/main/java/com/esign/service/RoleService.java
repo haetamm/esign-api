@@ -4,6 +4,7 @@ import com.esign.entities.role.RoleRequest;
 import com.esign.entities.role.RoleResponse;
 import com.esign.exception.BadRequestException;
 import com.esign.exception.NotFoundException;
+import com.esign.model.Role;
 
 import java.util.List;
 
@@ -13,4 +14,5 @@ public interface RoleService {
     RoleResponse getById(String id) throws NotFoundException;
     RoleResponse update(String id, RoleRequest request) throws NotFoundException;
     void delete(String id) throws NotFoundException;
+    Role getEntityById(String id);
 }

@@ -102,6 +102,12 @@ public class RoleServiceImpl implements RoleService {
         roleRepository.save(role);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public Role getEntityById(String id) {
+        return findByIdOrThrow(id);
+    }
+
     private Role findByIdOrThrow(String id) {
         return roleRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new NotFoundException(StatusMessage.ROLE_NOT_FOUND));

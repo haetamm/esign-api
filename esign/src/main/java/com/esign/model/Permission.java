@@ -11,9 +11,9 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 @Entity
+@EqualsAndHashCode(of = {"url", "action"})
 @Table(
-        name = TableName.T_PERMISSION,
-        uniqueConstraints = @UniqueConstraint(columnNames = {"url", "action"})
+        name = TableName.T_PERMISSION
 )
 public class Permission {
     @Id

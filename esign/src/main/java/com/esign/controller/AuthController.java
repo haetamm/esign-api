@@ -24,7 +24,7 @@ import java.awt.*;
 @RestController
 @RequestMapping(ApiUrl.API_URL + ApiUrl.API_AUTH)
 @RequiredArgsConstructor
-@Tag(name = "Auth", description = "Auth API")
+@Tag(name = "Auth", description = "Auth Management API")
 public class AuthController {
     private final AuthService authService;
     private final Utilities utilities;
