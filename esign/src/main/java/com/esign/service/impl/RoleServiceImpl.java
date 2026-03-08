@@ -1,20 +1,24 @@
 package com.esign.service.impl;
 
 import com.esign.constant.StatusMessage;
-import com.esign.entities.role.PermissionResponse;
-import com.esign.entities.role.RoleRequest;
-import com.esign.entities.role.RoleResponse;
+import com.esign.entities.role.*;
 import com.esign.exception.BadRequestException;
 import com.esign.exception.NotFoundException;
+import com.esign.helper.Utilities;
 import com.esign.model.Permission;
 import com.esign.model.Role;
 import com.esign.model.RolePermission;
+import com.esign.model.User;
 import com.esign.repository.PermissionRepository;
 import com.esign.repository.RolePermissionRepository;
 import com.esign.repository.RoleRepository;
 import com.esign.service.RoleService;
+import com.esign.specification.RoleSpecification;
 import com.esign.validation.ValidationUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,10 +32,12 @@ public class RoleServiceImpl implements RoleService {
     private final PermissionRepository permissionRepository;
     private final RolePermissionRepository rolePermissionRepository;
     private final ValidationUtil validationUtil;
+    private final RoleSpecification roleSpecification;
+    private final Utilities utilities;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public RoleResponse create(RoleRequest request) throws NotFoundException, BadRequestException {
+    public RoleDetailResponse create(RoleRequest request) throws NotFoundException, BadRequestException {
         validationUtil.validate(request);
 
         boolean exists = roleRepository.existsByName(request.getName().toUpperCase());
@@ -46,28 +52,33 @@ public class RoleServiceImpl implements RoleService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<RoleResponse> getAll() {
-        return roleRepository.findAllByIsActiveTrue().stream()
-                .map(role -> {
-                    List<Permission> permissions = rolePermissionRepository.findByRole(role)
-                            .stream().map(RolePermission::getPermission).toList();
-                    return toResponse(role, permissions);
-                })
-                .toList();
+    public Page<RoleResponse> getAll(SearchRoleRequest request) {
+        Specification<Role> spec = roleSpecification.specification(request);
+
+        Pageable pageable = utilities.buildPageable(
+                request.getPage(),
+                request.getSize(),
+                request.getSortBy(),
+                request.getDirection(),
+                "createdAt"
+        );
+
+        return roleRepository.findAll(spec, pageable)
+                .map(this::setRoleResponse);
     }
 
     @Transactional(readOnly = true)
     @Override
-    public RoleResponse getById(String id) throws NotFoundException {
+    public RoleDetailResponse getById(String id) throws NotFoundException {
         Role role = findByIdOrThrow(id);
         List<Permission> permissions = rolePermissionRepository.findByRole(role)
                 .stream().map(RolePermission::getPermission).toList();
-        return toResponse(role, permissions);
+        return setDetailResponse(role, permissions);
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public RoleResponse update(String id, RoleRequest request) throws NotFoundException {
+    public RoleDetailResponse update(String id, RoleRequest request) throws NotFoundException {
         validationUtil.validate(request);
         Role role = findByIdOrThrow(id);
 
@@ -79,27 +90,14 @@ public class RoleServiceImpl implements RoleService {
         return getRoleResponse(request, role);
     }
 
-    private RoleResponse getRoleResponse(RoleRequest request, Role role) throws NotFoundException {
-        List<Permission> permissions = permissionRepository.findAllByIdIn(request.getPermissionIds());
-        if (permissions.isEmpty()) throw new NotFoundException(StatusMessage.PERMISSIONS_NOT_FOUND);
-
-        List<RolePermission> rolePermissions = permissions.stream()
-                .map(permission -> RolePermission.builder()
-                        .role(role)
-                        .permission(permission)
-                        .build())
-                .toList();
-
-        rolePermissionRepository.saveAll(rolePermissions);
-        return toResponse(role, permissions);
-    }
-
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void delete(String id) {
-        Role role = findByIdOrThrow(id);
-        role.setIsActive(false);
+    public String toggleStatus(String id) throws NotFoundException {
+        Role role = roleRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(StatusMessage.ROLE_NOT_FOUND));
+        role.setIsActive(!role.getIsActive());
         roleRepository.save(role);
+        return role.getIsActive() ? StatusMessage.SUCCESS_ACTIVE : StatusMessage.SUCCESS_INACTIVE;
     }
 
     @Transactional(readOnly = true)
@@ -113,10 +111,35 @@ public class RoleServiceImpl implements RoleService {
                 .orElseThrow(() -> new NotFoundException(StatusMessage.ROLE_NOT_FOUND));
     }
 
-    private RoleResponse toResponse(Role role, List<Permission> permissions) {
+    private RoleResponse setRoleResponse(Role role) {
         return RoleResponse.builder()
                 .id(role.getId())
                 .name(role.getName())
+                .isActive(role.getIsActive())
+                .build();
+    }
+
+    private RoleDetailResponse getRoleResponse(RoleRequest request, Role role) throws NotFoundException {
+        List<Permission> permissions = permissionRepository.findAllByIdIn(request.getPermissionIds());
+        if (permissions.isEmpty()) throw new NotFoundException(StatusMessage.PERMISSIONS_NOT_FOUND);
+
+        List<RolePermission> rolePermissions = permissions.stream()
+                .map(permission -> RolePermission.builder()
+                        .role(role)
+                        .permission(permission)
+                        .build())
+                .toList();
+
+        rolePermissionRepository.saveAll(rolePermissions);
+        return setDetailResponse(role, permissions);
+    }
+
+    private RoleDetailResponse setDetailResponse(Role role, List<Permission> permissions) {
+        return RoleDetailResponse.builder()
+                .id(role.getId())
+                .name(role.getName())
+                .createdAt(String.valueOf(role.getCreatedAt()))
+                .updatedAt(String.valueOf(role.getUpdatedAt()))
                 .permissions(permissions.stream()
                         .map(p -> PermissionResponse.builder()
                                 .id(p.getId())

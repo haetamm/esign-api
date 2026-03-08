@@ -20,5 +20,7 @@ public class DetailResponse {
     private String username;
     private String email;
     private List<String> roles;
+    private String createdAt;
+    private String updatedAt;
 }
 

@@ -16,8 +16,9 @@ public class UserSpecification {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // hanya user aktif
-            predicates.add(criteriaBuilder.equal(root.get("isEnable"), true));
+            if (request.getIsEnable() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("isEnable"), request.getIsEnable()));
+            }
 
             // filter email
             if (request.getEmail() != null && !request.getEmail().isBlank()) {
@@ -49,6 +50,7 @@ public class UserSpecification {
                 ));
             }
 
+            assert query != null;
             return query.where(predicates.toArray(new Predicate[0])).getRestriction();
         };
     }

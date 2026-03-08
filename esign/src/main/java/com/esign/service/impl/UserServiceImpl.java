@@ -2,14 +2,12 @@ package com.esign.service.impl;
 
 import com.esign.constant.RoleName;
 import com.esign.constant.StatusMessage;
-import com.esign.entities.role.RoleResponse;
 import com.esign.entities.user.*;
 import com.esign.exception.NotFoundException;
 import com.esign.exception.ValidationCustomException;
 import com.esign.helper.Utilities;
 import com.esign.model.*;
 import com.esign.repository.ProfileRepository;
-import com.esign.repository.RolePermissionRepository;
 import com.esign.repository.UserRepository;
 import com.esign.repository.UserRoleRepository;
 import com.esign.service.RoleService;
@@ -19,9 +17,7 @@ import com.esign.specification.UserSpecification;
 import com.esign.validation.ValidationUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -40,6 +36,7 @@ public class UserServiceImpl implements UserService {
     private final RoleService roleService;
     private final PasswordEncoder passwordEncoder;
     private final UserSpecification userSpecification;
+    private final Utilities utilities;
 
     @Transactional(readOnly = true)
     @Override
@@ -115,13 +112,13 @@ public class UserServiceImpl implements UserService {
     public Page<UserResponse> getAll(SearchUserRequest request) {
         Specification<User> spec = userSpecification.specification(request);
 
-        String sortBy = request.getSortBy() != null ? request.getSortBy() : "username";
-        String direction = request.getDirection() != null ? request.getDirection() : "ASC";
-        int page = request.getPage() != null && request.getPage() > 0 ? request.getPage() : 1;
-        int size = request.getSize() != null ? request.getSize() : 10;
-
-        Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
-        Pageable pageable = PageRequest.of(page - 1, size, sort);
+        Pageable pageable = utilities.buildPageable(
+                request.getPage(),
+                request.getSize(),
+                request.getSortBy(),
+                request.getDirection(),
+                "createdAt"
+        );
 
         return userRepository.findAll(spec, pageable)
                 .map(this::setUserResponse);
@@ -146,6 +143,7 @@ public class UserServiceImpl implements UserService {
                 .address(profile.getAddress())
                 .gender(profile.getGender())
                 .email(user.getEmail())
+                .isEnable(user.getIsEnable())
                 .build();
     }
 
@@ -209,6 +207,8 @@ public class UserServiceImpl implements UserService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .roles(roles)
+                .createdAt(String.valueOf(user.getCreatedAt()))
+                .updatedAt(String.valueOf(user.getUpdatedAt()))
                 .build();
     }
 }

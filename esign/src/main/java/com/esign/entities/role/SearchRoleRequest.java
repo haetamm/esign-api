@@ -1,4 +1,4 @@
-package com.esign.entities.user;
+package com.esign.entities.role;
 
 import lombok.*;
 
@@ -7,12 +7,9 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class SearchUserRequest {
+public class SearchRoleRequest {
     private String name;
-    private String phone;
-    private String gender;
-    private String email;
-    private Boolean isEnable;
+    private Boolean isActive;
 
     private Integer page;
     private Integer size;

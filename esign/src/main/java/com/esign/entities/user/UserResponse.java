@@ -14,5 +14,6 @@ public class UserResponse {
     private String address;
     private String gender;
     private String email;
+    private Boolean isEnable;
 }
 

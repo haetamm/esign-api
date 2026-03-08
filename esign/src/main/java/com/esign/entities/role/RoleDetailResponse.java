@@ -9,8 +9,10 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class RoleResponse {
+public class RoleDetailResponse {
     private String id;
     private String name;
-    private Boolean isActive;
+    private List<PermissionResponse> permissions;
+    private String createdAt;
+    private String updatedAt;
 }

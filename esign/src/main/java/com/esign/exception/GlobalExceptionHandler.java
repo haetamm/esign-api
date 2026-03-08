@@ -3,6 +3,7 @@ package com.esign.exception;
 import com.esign.constant.StatusMessage;
 import com.esign.entities.WebErrorResponse;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +18,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<WebErrorResponse<String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return createErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage() != null ? ex.getMessage() : "Invalid argument");
+    }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<WebErrorResponse<String>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
@@ -65,8 +72,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InternalServerException.class)
-    public ResponseEntity<WebErrorResponse<String>> handleInternalServerException(InternalServerException exception) {
-        return createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage() != null ? exception.getMessage() : StatusMessage.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<WebErrorResponse<String>> handleInternalServerException(InternalServerException ex) {
+        log.error("Unhandled ex: {}", ex.getMessage(), ex);
+        return createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage() != null ? ex.getMessage() : StatusMessage.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
