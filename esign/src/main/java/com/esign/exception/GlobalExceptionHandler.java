@@ -3,6 +3,7 @@ package com.esign.exception;
 import com.esign.constant.StatusMessage;
 import com.esign.entities.WebErrorResponse;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -19,6 +20,26 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<WebErrorResponse<String>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        return createErrorResponse(HttpStatus.BAD_REQUEST, "Invalid format input: " + ex.getMostSpecificCause().getMessage());
+    }
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<WebErrorResponse<String>> handlePropertyReferenceException(PropertyReferenceException ex) {
+        return createErrorResponse(HttpStatus.BAD_REQUEST, "Invalid sort field: " + ex.getPropertyName());
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<WebErrorResponse<String>> handleIllegalStateException(IllegalStateException ex) {
+        return createErrorResponse(HttpStatus.BAD_REQUEST, ex != null ? ex.getMessage() : "");
+    }
+
+    @ExceptionHandler(NullPointerException.class)
+    public ResponseEntity<WebErrorResponse<String>> handleNullPointerException(NullPointerException ex) {
+        return createErrorResponse(HttpStatus.BAD_REQUEST, ex != null ? ex.getMessage() : "");
+    }
+
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<WebErrorResponse<Object>> handleConstraintViolationException(ConstraintViolationException exception) {
         List<Map<String, String>> errors = exception.getConstraintViolations().stream()
@@ -30,11 +51,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<WebErrorResponse<String>> handleNotFoundException(NotFoundException exception) {
         return createErrorResponse(HttpStatus.NOT_FOUND, exception.getMessage() != null ? exception.getMessage() : "Not Found");
-    }
-
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<WebErrorResponse<String>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
-        return createErrorResponse(HttpStatus.BAD_REQUEST, "Invalid format input: " + ex.getMostSpecificCause().getMessage());
     }
 
     @ExceptionHandler(UnauthorizedException.class)
@@ -62,16 +78,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<WebErrorResponse<String>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
         String errorMessage = StatusMessage.BAD_REQUEST;
         return createErrorResponse(HttpStatus.BAD_REQUEST, errorMessage);
-    }
-
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<WebErrorResponse<String>> handleIllegalStateException(IllegalStateException ex) {
-        return createErrorResponse(HttpStatus.BAD_REQUEST, ex != null ? ex.getMessage() : "");
-    }
-
-    @ExceptionHandler(NullPointerException.class)
-    public ResponseEntity<WebErrorResponse<String>> handleNullPointerException(NullPointerException ex) {
-        return createErrorResponse(HttpStatus.BAD_REQUEST, ex != null ? ex.getMessage() : "");
     }
 
     private <T> ResponseEntity<WebErrorResponse<T>> createErrorResponse(HttpStatus status, T data) {

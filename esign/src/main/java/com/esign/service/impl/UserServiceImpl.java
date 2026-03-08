@@ -15,8 +15,14 @@ import com.esign.repository.UserRoleRepository;
 import com.esign.service.RoleService;
 import com.esign.service.UserService;
 
+import com.esign.specification.UserSpecification;
 import com.esign.validation.ValidationUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,8 +39,7 @@ public class UserServiceImpl implements UserService {
     private final ValidationUtil validationUtil;
     private final RoleService roleService;
     private final PasswordEncoder passwordEncoder;
-    private final RolePermissionRepository rolePermissionRepository;
-    private final Utilities utilities;
+    private final UserSpecification userSpecification;
 
     @Transactional(readOnly = true)
     @Override
@@ -107,18 +112,29 @@ public class UserServiceImpl implements UserService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<UserResponse> getAll() {
-        return userRepository.findAllByIsEnableTrue().stream()
-                .map(this::setUserResponse)
-                .toList();
+    public Page<UserResponse> getAll(SearchUserRequest request) {
+        Specification<User> spec = userSpecification.specification(request);
+
+        String sortBy = request.getSortBy() != null ? request.getSortBy() : "username";
+        String direction = request.getDirection() != null ? request.getDirection() : "ASC";
+        int page = request.getPage() != null && request.getPage() > 0 ? request.getPage() : 1;
+        int size = request.getSize() != null ? request.getSize() : 10;
+
+        Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
+        Pageable pageable = PageRequest.of(page - 1, size, sort);
+
+        return userRepository.findAll(spec, pageable)
+                .map(this::setUserResponse);
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void deleteUser(String id) throws NotFoundException {
-        User user = findById(id);
-        user.setIsEnable(false);
+    public String toggleStatus(String id) throws NotFoundException {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(StatusMessage.USER_NOT_FOUND));
+        user.setIsEnable(!user.getIsEnable());
         userRepository.save(user);
+        return user.getIsEnable() ? StatusMessage.SUCCESS_ACTIVE : StatusMessage.SUCCESS_INACTIVE;
     }
 
     private UserResponse setUserResponse(User user) {

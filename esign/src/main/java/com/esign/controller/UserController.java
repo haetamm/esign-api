@@ -2,6 +2,7 @@ package com.esign.controller;
 
 import com.esign.constant.ApiUrl;
 import com.esign.constant.StatusMessage;
+import com.esign.entities.PaginationResponse;
 import com.esign.entities.WebResponse;
 import com.esign.entities.user.*;
 import com.esign.exception.BadRequestException;
@@ -13,6 +14,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -74,26 +77,34 @@ public class UserController {
     @Operation(summary = "Get all user")
     @SecurityRequirement(name = "Authorization")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<WebResponse<List<UserResponse>>> getAll() {
+    public ResponseEntity<WebResponse<List<UserResponse>>> getAll(
+            @ParameterObject @ModelAttribute SearchUserRequest request
+    ) {
+        Page<UserResponse> userPage = userService.getAll(request);
+
+        PaginationResponse pagination = new PaginationResponse(
+                userPage.getTotalPages(),
+                userPage.getTotalElements(),
+                userPage.getNumber() + 1,
+                userPage.getSize(),
+                userPage.hasNext(),
+                userPage.hasPrevious()
+        );
+
         return utilities.handleRequest(
-                userService::getAll,
+                userPage::getContent,
                 HttpStatus.OK,
-                StatusMessage.SUCCESS_RETRIEVE
+                StatusMessage.SUCCESS_RETRIEVE,
+                pagination
         );
     }
 
-    @Operation(summary = "Delete user By Id")
+    @Operation(summary = "Activate or deactivate user")
     @SecurityRequirement(name = "Authorization")
-    @DeleteMapping(path = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<WebResponse<Void>> delete(@PathVariable String id) {
-        return utilities.handleRequest(() -> {
-            try {
-                userService.deleteUser(id);
-            } catch (NotFoundException e) {
-                throw new RuntimeException(e);
-            }
-            return null;
-        }, HttpStatus.OK, StatusMessage.SUCCESS_DELETE);
+    @PatchMapping(path = "/{id}/status", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<WebResponse<String>> toggleStatus(@PathVariable String id) {
+        String message = userService.toggleStatus(id);
+        return utilities.handleRequest(() -> null, HttpStatus.OK, message);
     }
 
 }

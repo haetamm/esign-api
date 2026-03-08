@@ -7,6 +7,7 @@ import com.esign.exception.BadRequestException;
 import com.esign.exception.NotFoundException;
 import com.esign.exception.ValidationCustomException;
 import com.esign.model.User;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -15,6 +16,6 @@ public interface UserService {
     RegisterResponse createUser(RegisterRequest request) throws BadRequestException, ValidationCustomException;
     DetailResponse updateUser(UpdateRequest request, String userId) throws BadRequestException, ValidationCustomException;
     DetailResponse getById(String id) throws NotFoundException;
-    List<UserResponse> getAll();
-    void deleteUser(String id) throws NotFoundException;
+    Page<UserResponse> getAll(SearchUserRequest request);
+    String toggleStatus(String id) throws NotFoundException;
 }
