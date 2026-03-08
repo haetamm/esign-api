@@ -19,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -102,7 +103,7 @@ public class UserController {
     @Operation(summary = "Activate or deactivate user")
     @SecurityRequirement(name = "Authorization")
     @PatchMapping(path = "/{id}/status", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<WebResponse<String>> toggleStatus(@PathVariable String id) {
+    public ResponseEntity<WebResponse<String>> toggleStatus(@PathVariable String id) throws AccessDeniedException {
         String message = userService.toggleStatus(id);
         return utilities.handleRequest(() -> null, HttpStatus.OK, message);
     }

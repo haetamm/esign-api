@@ -19,9 +19,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 
 import java.time.LocalDate;
 import java.util.List;
@@ -86,6 +88,7 @@ public class UserServiceImpl implements UserService {
         Role role = getAndValidateRole(request.getRole_id());
 
         User user = findById(userId);
+        validateNotSuperAdmin(user);
         userRoleRepository.deleteAllByUser(user);
         userRoleRepository.save(UserRole.builder()
                 .user(user)
@@ -126,9 +129,10 @@ public class UserServiceImpl implements UserService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public String toggleStatus(String id) throws NotFoundException {
+    public String toggleStatus(String id) throws NotFoundException, AccessDeniedException {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(StatusMessage.USER_NOT_FOUND));
+        validateNotSuperAdmin(user);
         user.setIsEnable(!user.getIsEnable());
         userRepository.save(user);
         return user.getIsEnable() ? StatusMessage.SUCCESS_ACTIVE : StatusMessage.SUCCESS_INACTIVE;
@@ -210,5 +214,15 @@ public class UserServiceImpl implements UserService {
                 .createdAt(String.valueOf(user.getCreatedAt()))
                 .updatedAt(String.valueOf(user.getUpdatedAt()))
                 .build();
+    }
+
+    private void validateNotSuperAdmin(User user) throws AccessDeniedException {
+        boolean isSuperAdmin = userRoleRepository.findByUser(user)
+                .stream()
+                .anyMatch(userRole -> userRole.getRole().getName().equalsIgnoreCase(RoleName.SUPER_ADMIN));
+
+        if (isSuperAdmin) {
+            throw new AccessDeniedException("Cannot modify SUPER_ADMIN user");
+        }
     }
 }
