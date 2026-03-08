@@ -1,5 +1,6 @@
 package com.esign.service.impl;
 
+import com.esign.constant.RoleName;
 import com.esign.constant.StatusMessage;
 import com.esign.entities.role.*;
 import com.esign.exception.BadRequestException;
@@ -19,10 +20,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -81,7 +84,7 @@ public class RoleServiceImpl implements RoleService {
     public RoleDetailResponse update(String id, RoleRequest request) throws NotFoundException {
         validationUtil.validate(request);
         Role role = findByIdOrThrow(id);
-
+        isSuperAdmin(role);
         role.setName(request.getName().toUpperCase());
         roleRepository.save(role);
 
@@ -95,6 +98,7 @@ public class RoleServiceImpl implements RoleService {
     public String toggleStatus(String id) throws NotFoundException {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(StatusMessage.ROLE_NOT_FOUND));
+        isSuperAdmin(role);
         role.setIsActive(!role.getIsActive());
         roleRepository.save(role);
         return role.getIsActive() ? StatusMessage.SUCCESS_ACTIVE : StatusMessage.SUCCESS_INACTIVE;
@@ -109,6 +113,12 @@ public class RoleServiceImpl implements RoleService {
     private Role findByIdOrThrow(String id) {
         return roleRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new NotFoundException(StatusMessage.ROLE_NOT_FOUND));
+    }
+
+    private void isSuperAdmin(Role role) {
+        if (Objects.equals(role.getName(), RoleName.SUPER_ADMIN)) {
+            throw new AccessDeniedException("Cannot modify SUPER_ADMIN role");
+        }
     }
 
     private RoleResponse setRoleResponse(Role role) {
