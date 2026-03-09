@@ -3,8 +3,12 @@ package com.esign.service.impl;
 import com.esign.constant.ActionType;
 import com.esign.constant.ApiUrl;
 import com.esign.constant.RoleName;
+import com.esign.entities.user.ForgotPasswordRequest;
 import com.esign.entities.user.LoginRequest;
 import com.esign.entities.user.LoginResponse;
+import com.esign.entities.user.ResetPasswordRequest;
+import com.esign.exception.BadRequestException;
+import com.esign.exception.ValidationCustomException;
 import com.esign.model.*;
 import com.esign.repository.*;
 import com.esign.model.*;
@@ -15,6 +19,8 @@ import com.esign.validation.ValidationUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -38,7 +44,7 @@ public class AuthServiceImpl implements AuthService {
     private final RolePermissionRepository rolePermissionRepository;
     private final UserRoleRepository userRoleRepository;
     private final ProfileRepository profileRepository;
-
+    private final JavaMailSender mailSender;
 
     @Value("${esign_api.super-admin.name}")
     private String superAdminName;
@@ -155,11 +161,51 @@ public class AuthServiceImpl implements AuthService {
         return getLoginResponse(user);
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public String forgetPassword(ForgotPasswordRequest request) throws ValidationCustomException {
+        validationUtil.validate(request);
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ValidationCustomException("Email not found", "email"));
+        String token = jwtService.generateToken(user);
+        user.setResetPasswordToken(token);
+        userRepository.save(user);
+        String subject = "Reset Password";
+        String text = String.format("To reset your password, click the link below:\n http://localhost:3000/reset-password?token=%s", token);
+        sendEmail(user.getEmail(), subject, text);
+
+        return "Password reset link sent to your email";
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public String resetPassword(String token, ResetPasswordRequest request) throws BadRequestException {
+        validationUtil.validate(request);
+        if (!jwtService.verifyJwtToken(token)) {
+            throw new BadRequestException("Invalid or expired token");
+        }
+
+        User user = userRepository.findByResetPasswordToken(token)
+                .orElseThrow(() -> new BadRequestException("Invalid token"));
+        String hashedPassword = passwordEncoder.encode(request.getPassword());
+        user.setPassword(hashedPassword);
+        user.setResetPasswordToken(null);
+        return "Password reset successfully, please log in.";
+    }
+
     private LoginResponse getLoginResponse(User user) {
         String token = jwtService.generateToken(user);
         return LoginResponse.builder()
                 .username(user.getUsername())
                 .token(token)
                 .build();
+    }
+
+    private void sendEmail(String email, String subject, String text) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject(subject);
+        message.setText(text);
+        mailSender.send(message);
     }
 }

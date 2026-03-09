@@ -35,6 +35,8 @@ public class AuthorizationFilter extends OncePerRequestFilter {
 
     private static final List<String> PUBLIC_URLS = List.of(
             "/api/auth/login",
+            "/api/auth/forgot-password",
+            "/api/auth/reset-password",
             "/api-docs",
             "/swagger-ui"
     );

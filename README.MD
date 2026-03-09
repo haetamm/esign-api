@@ -55,6 +55,12 @@ IntelliJ → Run → Edit Configurations → Environment Variables
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/esign-db
 SPRING_DATASOURCE_USERNAME=developer
 SPRING_DATASOURCE_PASSWORD=rahasia
+
+# Google SMTP
+SMTP_HOST=your_smtp_host
+SMTP_PORT=587
+SMTP_USERNAME=your_email
+SMTP_PASSWORD=your_password
 ```
 
 ---
