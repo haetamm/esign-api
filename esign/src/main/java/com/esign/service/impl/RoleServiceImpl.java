@@ -1,15 +1,16 @@
 package com.esign.service.impl;
 
+import com.esign.constant.ApiUrl;
 import com.esign.constant.RoleName;
 import com.esign.constant.StatusMessage;
 import com.esign.entities.role.*;
 import com.esign.exception.BadRequestException;
 import com.esign.exception.NotFoundException;
+import com.esign.exception.ValidationCustomException;
 import com.esign.helper.Utilities;
 import com.esign.model.Permission;
 import com.esign.model.Role;
 import com.esign.model.RolePermission;
-import com.esign.model.User;
 import com.esign.repository.PermissionRepository;
 import com.esign.repository.RolePermissionRepository;
 import com.esign.repository.RoleRepository;
@@ -24,6 +25,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -40,17 +42,21 @@ public class RoleServiceImpl implements RoleService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public RoleDetailResponse create(RoleRequest request) throws NotFoundException, BadRequestException {
+    public RoleDetailResponse create(RoleRequest request) throws BadRequestException {
         validationUtil.validate(request);
-
-        boolean exists = roleRepository.existsByName(request.getName().toUpperCase());
-        if (exists) throw new BadRequestException(StatusMessage.ROLE_ALREADY_EXIST);
 
         Role role = roleRepository.save(Role.builder()
                 .name(request.getName().toUpperCase())
                 .build());
 
-        return getRoleResponse(request, role);
+        // merge dengan profile permission
+        List<String> permissionIds = mergeWithProfilePermissions(request.getPermissionIds());
+        request.setPermissionIds(permissionIds);
+
+        // validasi permission dari request dulu sebelum save
+        List<Permission> permissions = validatePermissions(permissionIds);
+
+        return saveRolePermissions(permissions, role);
     }
 
     @Transactional(readOnly = true)
@@ -81,16 +87,24 @@ public class RoleServiceImpl implements RoleService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public RoleDetailResponse update(String id, RoleRequest request) throws NotFoundException {
+    public RoleDetailResponse update(String id, UpdateRoleRequest request) throws NotFoundException, ValidationCustomException {
         validationUtil.validate(request);
         Role role = findByIdOrThrow(id);
         isSuperAdmin(role);
-        role.setName(request.getName().toUpperCase());
+
+        updateNameIfChange(request.getName().toUpperCase(), role);
         roleRepository.save(role);
 
         rolePermissionRepository.deleteByRole(role);
 
-        return getRoleResponse(request, role);
+        // tambah profile permission ke request jika belum ada
+        List<String> permissionIds = mergeWithProfilePermissions(request.getPermissionIds());
+        request.setPermissionIds(permissionIds);
+
+        // validasi permission dari request dulu sebelum save
+        List<Permission> permissions = validatePermissions(permissionIds);
+
+        return saveRolePermissions(permissions, role);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -115,6 +129,47 @@ public class RoleServiceImpl implements RoleService {
                 .orElseThrow(() -> new NotFoundException(StatusMessage.ROLE_NOT_FOUND));
     }
 
+    private List<Permission> validatePermissions(List<String> permissionIds) {
+        List<Permission> permissions = permissionRepository.findAllByIdIn(permissionIds);
+        if (permissions.size() != permissionIds.size()) {
+            List<String> foundIds = permissions.stream()
+                    .map(Permission::getId)
+                    .toList();
+
+            List<String> missingIds = permissionIds.stream()
+                    .filter(id -> !foundIds.contains(id))
+                    .toList();
+
+            throw new NotFoundException(
+                    StatusMessage.PERMISSIONS_NOT_FOUND + ": " + missingIds
+            );
+        }
+
+        return permissions;
+    }
+
+    private void updateNameIfChange(String newName, Role role) throws ValidationCustomException {
+        if (newName != null && !newName.isBlank() && !newName.equals(role.getName())) {
+            if (roleRepository.existsByName(newName)) {
+                throw new ValidationCustomException(StatusMessage.ROLE_ALREADY_EXIST, "name");
+            }
+            role.setName(newName.toUpperCase());
+        }
+    }
+
+    private List<String> mergeWithProfilePermissions(List<String> requestPermissionIds) {
+        List<String> profilePermissionIds = permissionRepository
+                .findAllByUrl(ApiUrl.API_URL + ApiUrl.API_PROFILE)
+                .stream()
+                .map(Permission::getId)
+                .filter(id -> !requestPermissionIds.contains(id)) // ← skip kalau sudah ada
+                .toList();
+
+        List<String> merged = new ArrayList<>(requestPermissionIds);
+        merged.addAll(profilePermissionIds);
+        return merged;
+    }
+
     private void isSuperAdmin(Role role) {
         if (Objects.equals(role.getName(), RoleName.SUPER_ADMIN)) {
             throw new AccessDeniedException("Cannot modify SUPER_ADMIN role");
@@ -129,10 +184,7 @@ public class RoleServiceImpl implements RoleService {
                 .build();
     }
 
-    private RoleDetailResponse getRoleResponse(RoleRequest request, Role role) throws NotFoundException {
-        List<Permission> permissions = permissionRepository.findAllByIdIn(request.getPermissionIds());
-        if (permissions.isEmpty()) throw new NotFoundException(StatusMessage.PERMISSIONS_NOT_FOUND);
-
+    private RoleDetailResponse saveRolePermissions(List<Permission> permissions, Role role) throws NotFoundException {
         List<RolePermission> rolePermissions = permissions.stream()
                 .map(permission -> RolePermission.builder()
                         .role(role)

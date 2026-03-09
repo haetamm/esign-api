@@ -65,6 +65,11 @@ public class GlobalExceptionHandler {
         return createErrorResponse(HttpStatus.UNAUTHORIZED, exception.getMessage() != null ? exception.getMessage() : "Unauthorized");
     }
 
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<WebErrorResponse<String>> handleBadRequestException(BadRequestException exception) {
+        return createErrorResponse(HttpStatus.BAD_REQUEST, exception.getMessage() != null ? exception.getMessage() : "Bad Request");
+    }
+
     @ExceptionHandler(ValidationCustomException.class)
     public ResponseEntity<WebErrorResponse<Object>> handleValidationCustomException(ValidationCustomException exception) {
         List<Map<String, String>> errors = List.of(Map.of("path", exception.getPath(), "message", exception.getMessage()));

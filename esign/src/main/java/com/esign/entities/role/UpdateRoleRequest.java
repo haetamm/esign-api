@@ -1,6 +1,5 @@
 package com.esign.entities.role;
 
-import com.esign.annotation.role.UniqueName;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -12,10 +11,9 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class RoleRequest {
+public class UpdateRoleRequest {
 
     @NotBlank(message = "Name is required")
-    @UniqueName
     private String name;
 
     @NotNull(message = "Permission ids is required")

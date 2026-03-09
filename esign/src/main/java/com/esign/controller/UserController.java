@@ -48,7 +48,7 @@ public class UserController {
     @Operation(summary = "Update User By Id")
     @SecurityRequirement(name = "Authorization")
     @PutMapping(path = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<WebResponse<DetailResponse>> updateUser(@RequestBody UpdateRequest request, @PathVariable String id) {
+    public ResponseEntity<WebResponse<DetailResponse>> updateUser(@RequestBody UpdateUserRequest request, @PathVariable String id) {
         return utilities.handleRequest(() -> {
             try {
                 return userService.updateUser(request, id);

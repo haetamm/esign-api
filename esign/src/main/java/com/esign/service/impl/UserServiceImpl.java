@@ -2,6 +2,8 @@ package com.esign.service.impl;
 
 import com.esign.constant.RoleName;
 import com.esign.constant.StatusMessage;
+import com.esign.entities.profile.ProfileRequest;
+import com.esign.entities.profile.UpdateProfileRequest;
 import com.esign.entities.user.*;
 import com.esign.exception.NotFoundException;
 import com.esign.exception.ValidationCustomException;
@@ -20,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,7 +86,7 @@ public class UserServiceImpl implements UserService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public DetailResponse updateUser(UpdateRequest request, String userId) throws ValidationCustomException {
+    public DetailResponse updateUser(UpdateUserRequest request, String userId) throws ValidationCustomException {
         validationUtil.validate(request);
         Role role = getAndValidateRole(request.getRole_id());
 
@@ -95,7 +98,13 @@ public class UserServiceImpl implements UserService {
                 .role(role)
                 .build());
 
-        updateUserData(request, user);
+        updateUsernameIfChange(request.getUsername(), user);
+        updateEmailIfChange(request.getEmail(), user);
+        if (!request.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        updateProfile(request, user);
         userRepository.save(user);
         Profile profile = profileRepository.save(user.getProfile());
 
@@ -138,6 +147,33 @@ public class UserServiceImpl implements UserService {
         return user.getIsEnable() ? StatusMessage.SUCCESS_ACTIVE : StatusMessage.SUCCESS_INACTIVE;
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public DetailResponse updateCurrentUser(UpdateProfileRequest request) throws ValidationCustomException {
+        validationUtil.validate(request);
+
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = findById(userId);
+        validateNotSuperAdmin(user);
+
+        updateUsernameIfChange(request.getUsername(), user);
+        updateEmailIfChange(request.getEmail(), user);
+        updateProfile(request, user);
+        userRepository.save(user);
+        Profile profile = profileRepository.save(user.getProfile());
+
+        return setDetailResponse(user, profile);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public DetailResponse getCurrentUser() throws NotFoundException {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = findById(userId);
+        Profile profile = user.getProfile();
+        return setDetailResponse(user, profile);
+    }
+
     private UserResponse setUserResponse(User user) {
         Profile profile = user.getProfile();
         return UserResponse.builder()
@@ -155,10 +191,7 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByIdAndIsEnableTrue(id).orElseThrow(() -> new NotFoundException(StatusMessage.USER_NOT_FOUND));
     }
 
-    private void updateUserData(UpdateRequest request, User user) throws ValidationCustomException {
-        updateUsernameIfChange(request.getUsername(), user);
-        updateEmailIfChange(request.getEmail(), user);
-
+    private void updateProfile(ProfileRequest request, User user) {
         Profile profile = user.getProfile();
         profile.setName(request.getName());
         profile.setPhone(request.getPhone());
@@ -204,6 +237,7 @@ public class UserServiceImpl implements UserService {
         return DetailResponse.builder()
                 .name(profile.getName())
                 .phone(profile.getPhone())
+                .address(profile.getAddress())
                 .birthPlace(profile.getBirthPlace())
                 .birthDate(String.valueOf(profile.getBirthDate()))
                 .religion(profile.getReligion())
