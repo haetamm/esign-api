@@ -18,4 +18,5 @@ public interface UserService {
     String toggleStatus(String id) throws NotFoundException, AccessDeniedException;
     DetailResponse updateCurrentUser(UpdateProfileRequest request) throws BadRequestException, ValidationCustomException;
     DetailResponse getCurrentUser() throws NotFoundException;
+    User getEntityById(String id);
 }

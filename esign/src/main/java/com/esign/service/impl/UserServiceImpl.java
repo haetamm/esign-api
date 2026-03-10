@@ -26,8 +26,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-
 import java.time.LocalDate;
 import java.util.List;
 
@@ -174,6 +172,12 @@ public class UserServiceImpl implements UserService {
         return setDetailResponse(user, profile);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public User getEntityById(String id) {
+        return findById(id);
+    }
+
     private UserResponse setUserResponse(User user) {
         Profile profile = user.getProfile();
         return UserResponse.builder()
@@ -244,6 +248,7 @@ public class UserServiceImpl implements UserService {
                 .gender(profile.getGender())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .profile_id(profile.getId())
                 .roles(roles)
                 .createdAt(String.valueOf(user.getCreatedAt()))
                 .updatedAt(String.valueOf(user.getUpdatedAt()))

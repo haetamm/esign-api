@@ -9,6 +9,7 @@ public class StatusMessage {
     public static final String SUCCESS_ACTIVE = "Data activated successfully";
     public static final String SUCCESS_INACTIVE = "Data deactivated successfully";
     public static final String USER_NOT_FOUND = "User Not Found";
+    public static final String AVATAR_NOT_FOUND = "Avatar Not Found";
     public static final String ERROR_CREATING_JWT = "Error creating JWT";
     public static final String UNAUTHORIZED = "Unauthorized";
     public static final String ACCESS_DENIED = "Access Denied";

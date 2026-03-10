@@ -19,6 +19,7 @@ public class DetailResponse {
     private String gender;
     private String username;
     private String email;
+    private String profile_id;
     private List<String> roles;
     private String createdAt;
     private String updatedAt;
