@@ -6,4 +6,5 @@ public class ApiUrl {
     public static final String API_USER = "/user";
     public static final String API_ROLE = "/role";
     public static final String API_PROFILE = "/profile";
+    public static final String API_FOLDER = "/folder";
 }

@@ -9,6 +9,7 @@ import com.esign.model.Profile;
 import com.esign.model.User;
 import com.esign.repository.ProfileRepository;
 import com.esign.repository.UserRepository;
+import com.esign.service.AuthService;
 import com.esign.service.ProfileService;
 import com.esign.service.StorageService;
 import com.esign.service.UserService;
@@ -36,7 +37,7 @@ public class ProfileServiceImpl implements ProfileService {
     private final PasswordEncoder passwordEncoder;
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
-    private final UserService userService;
+    private final AuthService authService;
     private final StorageService storageService;
 
     @Transactional(rollbackFor = Exception.class)
@@ -56,8 +57,8 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     public String changePassword(ChangePasswordRequest request) throws ValidationCustomException {
         validationUtil.validate(request);
-        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userService.getEntityById(userId);
+
+        User user = authService.getAuthenticatedUser();
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new ValidationCustomException("Password incorrect", "oldPassword");
         }
@@ -71,8 +72,8 @@ public class ProfileServiceImpl implements ProfileService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public String uploadAvatar(UploadAvatarRequest request) throws NotFoundException, IOException {
-        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userService.getEntityById(userId);
+
+        User user = authService.getAuthenticatedUser();
         Profile profile = user.getProfile();
 
         // hapus file lama jika ada
@@ -96,4 +97,5 @@ public class ProfileServiceImpl implements ProfileService {
     private Profile findById(String id) throws NotFoundException {
         return profileRepository.findById(id).orElseThrow(() -> new NotFoundException(StatusMessage.AVATAR_NOT_FOUND));
     }
+
 }

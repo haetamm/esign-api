@@ -1,11 +1,11 @@
 package com.esign.model;
 
+import com.esign.constant.FolderPermissionType;
 import com.esign.constant.TableName;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Setter
 @Getter
@@ -13,22 +13,24 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = TableName.T_ROLE)
-public class Role {
+@Table(name = TableName.T_FOLDER_CONTRIBUTOR)
+public class FolderContributor {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false, unique = true)
-    private String name;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folder_id", nullable = false)
+    private Folder folder;
 
-    @Column(name = "is_active", nullable = false)
-    @Builder.Default
-    private Boolean isActive = true;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL)
-    private List<RolePermission> rolePermissions;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "permission_type", nullable = false)
+    private FolderPermissionType permissionType;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -38,9 +40,8 @@ public class Role {
 
     @PrePersist
     protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        createdAt = now;
-        updatedAt = now;
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate

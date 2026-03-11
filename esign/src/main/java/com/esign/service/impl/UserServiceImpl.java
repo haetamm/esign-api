@@ -12,6 +12,7 @@ import com.esign.model.*;
 import com.esign.repository.ProfileRepository;
 import com.esign.repository.UserRepository;
 import com.esign.repository.UserRoleRepository;
+import com.esign.service.AuthService;
 import com.esign.service.RoleService;
 import com.esign.service.UserService;
 
@@ -40,6 +41,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserSpecification userSpecification;
     private final Utilities utilities;
+    private final AuthService authService;
 
     @Transactional(readOnly = true)
     @Override
@@ -150,8 +152,7 @@ public class UserServiceImpl implements UserService {
     public DetailResponse updateCurrentUser(UpdateProfileRequest request) throws ValidationCustomException {
         validationUtil.validate(request);
 
-        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = findById(userId);
+        User user = authService.getAuthenticatedUser();
         validateNotSuperAdmin(user);
 
         updateUsernameIfChange(request.getUsername(), user);
@@ -166,8 +167,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     @Override
     public DetailResponse getCurrentUser() throws NotFoundException {
-        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = findById(userId);
+        User user = authService.getAuthenticatedUser();
         Profile profile = user.getProfile();
         return setDetailResponse(user, profile);
     }

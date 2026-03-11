@@ -1,10 +1,12 @@
 package com.esign.service.impl;
 
+import com.esign.constant.StatusMessage;
 import com.esign.entities.user.ForgotPasswordRequest;
 import com.esign.entities.user.LoginRequest;
 import com.esign.entities.user.LoginResponse;
 import com.esign.entities.user.ResetPasswordRequest;
 import com.esign.exception.BadRequestException;
+import com.esign.exception.NotFoundException;
 import com.esign.exception.ValidationCustomException;
 import com.esign.model.*;
 import com.esign.repository.*;
@@ -78,6 +80,14 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(hashedPassword);
         user.setResetPasswordToken(null);
         return "Password reset successfully, please log in.";
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public User getAuthenticatedUser() {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByIdAndIsEnableTrue(userId)
+                .orElseThrow(() -> new NotFoundException(StatusMessage.USER_NOT_FOUND));
     }
 
     private LoginResponse getLoginResponse(User user) {
