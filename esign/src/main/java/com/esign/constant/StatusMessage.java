@@ -6,6 +6,7 @@ public class StatusMessage {
     public static final String SUCCESS_UPDATE = "Data successfully updated";
     public static final String SUCCESS_DELETE = "Data successfully deleted";
     public static final String SUCCESS_RETRIEVE = "Data successfully retrieved";
+    public static final String SUCCESS_RESTORE = "Data successfully restored";
     public static final String SUCCESS_ACTIVE = "Data activated successfully";
     public static final String SUCCESS_INACTIVE = "Data deactivated successfully";
     public static final String USER_NOT_FOUND = "User Not Found";

@@ -16,7 +16,8 @@ public class FolderRequest {
 
     private String parentId; // null = root folder
 
-    private String requiredRoleId; // null = umum, diisi = khusus role
+    @NotNull(message = "isRoleRestricted is required")
+    private Boolean isRoleRestricted; // false = folder umum
 
     @NotNull(message = "isPublic is required")
     private Boolean isPublic;
