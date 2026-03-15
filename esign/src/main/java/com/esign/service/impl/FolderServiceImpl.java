@@ -315,7 +315,6 @@ public class FolderServiceImpl implements FolderService {
 
         validateAccessForRestore(folder, user);
 
-        // cek parent
         if (folder.getOriginalParentId() != null) {
             Folder originalParent = folderRepository.findById(folder.getOriginalParentId())
                     .orElseThrow(() -> new BadRequestException("Cannot restore, parent folder has been permanently deleted"));
@@ -327,7 +326,7 @@ public class FolderServiceImpl implements FolderService {
             folder.setParent(originalParent);
         }
 
-        restoreRecursive(folder);
+        restoreRecursive(folder, folder.getDeletedAt());
         return toResponse(folder);
     }
 
@@ -416,29 +415,37 @@ public class FolderServiceImpl implements FolderService {
     }
 
     private void softDeleteRecursive(Folder folder, User deletedBy) {
+        LocalDateTime now = LocalDateTime.now();
+        softDeleteRecursiveWithTime(folder, deletedBy, now, true);
+    }
+
+    private void softDeleteRecursiveWithTime(Folder folder, User deletedBy, LocalDateTime deletedAt, boolean isDirect) {
         List<Folder> children = folderRepository.findAllByParentAndIsDeletedFalse(folder);
         for (Folder child : children) {
-            softDeleteRecursive(child, deletedBy);
+            softDeleteRecursiveWithTime(child, deletedBy, deletedAt, false);
         }
         folder.setOriginalParentId(
                 folder.getParent() != null ? folder.getParent().getId() : null
         );
         folder.setIsDeleted(true);
-        folder.setDeletedAt(LocalDateTime.now());
+        folder.setIsDirectDeleted(isDirect);
+        folder.setDeletedAt(deletedAt);
         folder.setDeletedBy(deletedBy);
         folderRepository.save(folder);
     }
 
-    private void restoreRecursive(Folder folder) {
+    private void restoreRecursive(Folder folder, LocalDateTime deletedAt) {
         folder.setIsDeleted(false);
+        folder.setIsDirectDeleted(false);
         folder.setDeletedAt(null);
         folder.setDeletedBy(null);
         folder.setOriginalParentId(null);
         folderRepository.save(folder);
 
-        // restore semua child
         folderRepository.findAllByOriginalParentIdAndIsDeletedTrue(folder.getId())
-                .forEach(this::restoreRecursive);
+                .stream()
+                .filter(child -> child.getDeletedAt().equals(deletedAt))
+                .forEach(child -> restoreRecursive(child, deletedAt));
     }
 
     private void validateAccessForRestore(Folder folder, User user) {

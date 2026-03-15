@@ -19,6 +19,7 @@ public class FolderTrashSpecification {
             List<Predicate> predicates = new ArrayList<>();
 
             predicates.add(cb.equal(root.get("isDeleted"), true));
+            predicates.add(cb.equal(root.get("isDirectDeleted"), true));
 
             if (request.getName() != null && !request.getName().isBlank()) {
                 predicates.add(cb.like(

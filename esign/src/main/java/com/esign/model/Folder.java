@@ -73,6 +73,10 @@ public class Folder {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Column(name = "is_direct_deleted", nullable = false)
+    @Builder.Default
+    private Boolean isDirectDeleted = false;
+
     @Column(name = "original_parent_id")
     private String originalParentId;
 }
