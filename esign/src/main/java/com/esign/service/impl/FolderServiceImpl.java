@@ -348,7 +348,9 @@ public class FolderServiceImpl implements FolderService {
         return false;
     }
 
-    private void validateAccess(Folder folder, User user, FolderPermissionType required) {
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void validateAccess(Folder folder, User user, FolderPermissionType required) {
         // 1. cek required_role
         if (folder.getRequiredRole() != null) {
             boolean hasRole = userRoleRepository.findByUser(user)

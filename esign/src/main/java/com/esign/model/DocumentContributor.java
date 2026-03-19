@@ -28,9 +28,6 @@ public class DocumentContributor {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "sign_order", nullable = false)
-    private Integer signOrder;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
@@ -38,6 +35,9 @@ public class DocumentContributor {
 
     @Column(name = "signed_at")
     private LocalDateTime signedAt;
+
+    @Column(name = "notified_at")
+    private LocalDateTime notifiedAt; // ← kapan terakhir dikirim notifikasi
 
     @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;

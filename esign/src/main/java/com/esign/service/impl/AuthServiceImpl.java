@@ -13,6 +13,7 @@ import com.esign.repository.*;
 import com.esign.model.*;
 import com.esign.repository.*;
 import com.esign.service.AuthService;
+import com.esign.service.EmailService;
 import com.esign.service.JwtService;
 import com.esign.validation.ValidationUtil;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
-    private final JavaMailSender mailSender;
+    private final EmailService emailService;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -61,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
         String subject = "Reset Password";
         String text = String.format("To reset your password, click the link below:\n http://localhost:3000/reset-password?token=%s", token);
-        sendEmail(user.getEmail(), subject, text);
+        emailService.sendEmail(user.getEmail(), subject, text);
 
         return "Password reset link sent to your email";
     }
@@ -98,11 +99,4 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-    private void sendEmail(String email, String subject, String text) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject(subject);
-        message.setText(text);
-        mailSender.send(message);
-    }
 }
