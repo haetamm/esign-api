@@ -1,5 +1,6 @@
 package com.esign.service;
 
 public interface EmailService {
-    void sendEmail(String email, String subject, String text);
+    void sendEmail(String to, String subject, String text);
+    void sendEmailAfterCommit(String to, String subject, String text);
 }

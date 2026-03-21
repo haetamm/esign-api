@@ -7,14 +7,12 @@ import com.esign.entities.document.DocumentContributorResponse;
 import com.esign.entities.document.DocumentRequest;
 import com.esign.entities.document.DocumentResponse;
 import com.esign.exception.BadRequestException;
-import com.esign.exception.InternalServerException;
 import com.esign.exception.NotFoundException;
 import com.esign.model.*;
 import com.esign.repository.*;
 import com.esign.service.*;
 import com.esign.validation.ValidationUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -23,7 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -43,14 +41,12 @@ public class DocumentServiceImpl implements DocumentService {
     private final EmailService emailService;
     private final FolderService folderService;
 
-    // impl
     @Transactional(rollbackFor = Exception.class)
     @Override
     public DocumentResponse upload(DocumentRequest request) throws IOException {
         validationUtil.validate(request);
         User owner = authService.getAuthenticatedUser();
 
-        // 2. validasi folder
         Folder folder = null;
         if (request.getFolderId() != null) {
             folder = folderRepository.findByIdAndIsDeletedFalse(request.getFolderId())
@@ -58,39 +54,40 @@ public class DocumentServiceImpl implements DocumentService {
             folderService.validateAccess(folder, owner, FolderPermissionType.UPLOAD);
         }
 
-        // 3. simpan file ke storage
         String documentId = UUID.randomUUID().toString();
         String category = storageService.resolveCategory(folder);
-        String fileName = StringUtils.cleanPath(String.valueOf(Objects.requireNonNull(request.getDocument())));
-
+        String fileName = request.getTitle();
 
         Path documentDir = storageService.getDocumentPath(category, documentId);
         Path filePath = documentDir.resolve("original.pdf");
         Files.copy(request.getDocument().getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        // 4. simpan document ke DB
-        Document document = documentRepository.save(Document.builder()
-                .id(documentId)
-                .title(request.getTitle())
-                .filePath(filePath.toString())
-                .fileName(fileName)
-                .fileSize(request.getDocument().getSize())
-                .owner(owner)
-                .folder(folder)
-                .deadline(LocalDateTime.parse(request.getDeadline()))
-                .status(DocumentStatus.DRAFT)
-                .build());
+        try {
+            Document document = documentRepository.save(Document.builder()
+                    .id(documentId)
+                    .title(request.getTitle())
+                    .filePath(filePath.toString())
+                    .fileName(fileName)
+                    .fileSize(request.getDocument().getSize())
+                    .owner(owner)
+                    .folder(folder)
+                    .deadline(LocalDate.parse(request.getDeadline()).atTime(23, 59, 59))
+                    .status(DocumentStatus.DRAFT)
+                    .build());
 
-        // 5. set contributor jika ada
-        if (request.getContributorIds() != null && !request.getContributorIds().isEmpty()) {
-            addContributors(document, request.getContributorIds());
-            document.setStatus(DocumentStatus.WAITING_SIGNATURE);
-            documentRepository.save(document);
+            if (request.getContributorIds() != null && !request.getContributorIds().isEmpty()) {
+                addContributors(document, request.getContributorIds());
+                document.setStatus(DocumentStatus.WAITING_SIGNATURE);
+                documentRepository.save(document);
+            }
+
+            return toResponse(document);
+
+        } catch (Exception e) {
+            // cleanup folder + file jika DB gagal
+            storageService.deleteDocumentFiles(category, documentId);
+            throw e;
         }
-
-        return toResponse(document);
-
-
     }
 
     private void addContributors(Document document, List<String> contributorIds) {
@@ -116,12 +113,12 @@ public class DocumentServiceImpl implements DocumentService {
 
 
             String subject = "Document Signature Request - " + documentContributor.getDocument().getTitle();
-            String text =    "Halo " + documentContributor.getUser().getUsername() + ",\n\n" +
+            String text = String.format("Halo " + documentContributor.getUser().getUsername() + ",\n\n" +
                     "Anda ditambahkan sebagai penandatangan document: " + documentContributor.getDocument().getTitle() + "\n" +
                     "Silakan login untuk menandatangani document tersebut.\n\n" +
-                    "Terima kasih.";
+                    "Terima kasih.");
 
-            emailService.sendEmail(documentContributor.getUser().getEmail(), subject, text);
+            emailService.sendEmailAfterCommit(documentContributor.getUser().getEmail(), subject, text);
 
         });
     }

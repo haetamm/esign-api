@@ -62,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
         String subject = "Reset Password";
         String text = String.format("To reset your password, click the link below:\n http://localhost:3000/reset-password?token=%s", token);
-        emailService.sendEmail(user.getEmail(), subject, text);
+        emailService.sendEmailAfterCommit(user.getEmail(), subject, text);
 
         return "Password reset link sent to your email";
     }
