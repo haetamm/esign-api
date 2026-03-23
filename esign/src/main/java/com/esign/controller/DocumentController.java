@@ -5,6 +5,7 @@ import com.esign.constant.StatusMessage;
 import com.esign.entities.WebResponse;
 import com.esign.entities.document.DocumentRequest;
 import com.esign.entities.document.DocumentResponse;
+import com.esign.entities.folder.RenameRequest;
 import com.esign.exception.BadRequestException;
 import com.esign.exception.InternalServerException;
 import com.esign.helper.Utilities;
@@ -84,5 +85,24 @@ public class DocumentController {
                         "attachment; filename=\"" + document.getFilename() + "\"")
                 .header(HttpHeaders.CONTENT_TYPE, contentType)
                 .body(document);
+    }
+
+    @Operation(
+            summary = "Rename document",
+            description = "Folder <b>MANAGE</b> permission required. <br>"
+    )
+    @SecurityRequirement(name = "Authorization")
+    @PutMapping(path = "/{id}/rename", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<WebResponse<DocumentResponse>> rename(
+            @PathVariable String id,
+            @RequestBody RenameRequest request
+    ) {
+        return utilities.handleRequest(
+                () -> {
+                    return documentService.rename(id, request);
+                },
+                HttpStatus.OK,
+                StatusMessage.SUCCESS_UPDATE
+        );
     }
 }

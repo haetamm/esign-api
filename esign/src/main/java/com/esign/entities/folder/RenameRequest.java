@@ -8,7 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class FolderRenameRequest {
+public class RenameRequest {
     @NotBlank(message = "Name is required")
     private String name;
 }

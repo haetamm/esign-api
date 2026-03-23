@@ -10,10 +10,11 @@ import org.springframework.security.access.AccessDeniedException;
 import java.util.List;
 
 public interface FolderService {
+    Folder getEntityById(String id);
     FolderResponse create(FolderRequest request) throws BadRequestException, AccessDeniedException;
     RootResponse getRootFolders(SearchFolderRequest request);
     SubFolderResponse getById(String id, SearchSubFolderRequest request);
-    FolderResponse rename(String id, FolderRenameRequest request) throws BadRequestException;
+    FolderResponse rename(String id, RenameRequest request) throws BadRequestException;
     FolderResponse move(String id, FolderMoveRequest request) throws BadRequestException;
     FolderResponse toggleVisibility(String id);
     void addContributor(String id, FolderContributorRequest request) throws BadRequestException;

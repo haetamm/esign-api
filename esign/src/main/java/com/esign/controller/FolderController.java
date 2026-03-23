@@ -102,7 +102,7 @@ public class FolderController {
     @PutMapping(path = "/{id}/rename", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<WebResponse<FolderResponse>> rename(
             @PathVariable String id,
-            @RequestBody FolderRenameRequest request
+            @RequestBody RenameRequest request
     ) {
         return utilities.handleRequest(
                 () -> {

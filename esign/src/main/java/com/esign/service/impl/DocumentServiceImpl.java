@@ -6,6 +6,7 @@ import com.esign.constant.FolderPermissionType;
 import com.esign.constant.StatusMessage;
 import com.esign.entities.document.DocumentRequest;
 import com.esign.entities.document.DocumentResponse;
+import com.esign.entities.folder.RenameRequest;
 import com.esign.exception.BadRequestException;
 import com.esign.exception.NotFoundException;
 import com.esign.helper.Utilities;
@@ -36,7 +37,6 @@ public class DocumentServiceImpl implements DocumentService {
     private final ValidationUtil validationUtil;
     private final Utilities utilities;
     private final AuthService authService;
-    private final FolderRepository folderRepository;
     private final StorageService storageService;
     private final DocumentRepository documentRepository;
     private final DocumentContributorRepository documentContributorRepository;
@@ -57,13 +57,12 @@ public class DocumentServiceImpl implements DocumentService {
                     .stream()
                     .findFirst()
                     .map(UserRole::getRole)
-                    .orElseThrow(() -> new AccessDeniedException("You don't have the required role"));
+                    .orElseThrow(() -> new AccessDeniedException("You don't have the required role to access this resource"));
         }
 
         Folder folder = null;
         if (request.getFolderId() != null && !request.getFolderId().isBlank()) {
-            folder = folderRepository.findByIdAndIsDeletedFalse(request.getFolderId())
-                    .orElseThrow(() -> new NotFoundException("Folder not found"));
+            folder = folderService.getEntityById(request.getFolderId());
 
             if (!folder.getIsPublic()) {
                 folderService.validateAccess(folder, owner, FolderPermissionType.UPLOAD);
@@ -117,14 +116,9 @@ public class DocumentServiceImpl implements DocumentService {
             if (document.getFolder() != null) {
                 throw new AccessDeniedException("Document is inside a folder, provide folder_id");
             }
-            // validasi owner untuk root document
-//            if (!document.getOwner().getId().equals(owner.getId())) {
-//                throw new AccessDeniedException("You are not the owner of this document");
-//            }
         } else {
             // document dalam folder — validasi folder dan akses
-            Folder folder = folderRepository.findByIdAndIsDeletedFalse(folderId)
-                    .orElseThrow(() -> new NotFoundException("Folder not found"));
+            Folder folder = folderService.getEntityById(folderId);
 
             if (!folder.getIsPublic()) {
                 folderService.validateAccess(folder, owner, FolderPermissionType.UPLOAD);
@@ -141,6 +135,41 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         return new UrlResource(filePath.toUri());
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public DocumentResponse rename(String id, RenameRequest request) {
+        validationUtil.validate(request);
+        User owner = authService.getAuthenticatedUser();
+
+        Document document = findById(id);
+
+        Folder folder = null;
+        if (document.getFolder() != null) {
+            folder = folderService.getEntityById(document.getFolder().getId());
+
+            if (!folder.getIsPublic()) {
+                folderService.validateAccess(folder, owner, FolderPermissionType.MANAGE);
+            }
+        }
+
+        if (document.getRequiredRole() != null) {
+            boolean hasRole = userRoleRepository.findByUser(owner)
+                    .stream()
+                    .anyMatch(ur -> ur.getRole().getId()
+                            .equals(document.getRequiredRole().getId()));
+            if (!hasRole) {
+                throw new AccessDeniedException(
+                        "You don't have the required role '" + document.getRequiredRole().getName() + "' to access this resource"
+                );
+            }
+        }
+
+        document.setTitle(request.getName());
+        document.setFileName(request.getName());
+        return utilities.documentResponse(documentRepository.save(document));
+
     }
 
     private Document findById(String id) throws NotFoundException {
@@ -177,7 +206,6 @@ public class DocumentServiceImpl implements DocumentService {
                             .status(ContributorStatus.PENDING)
                             .build()
             );
-
 
             String subject = "Document Signature Request - " + documentContributor.getDocument().getTitle();
             String text = String.format("Halo " + documentContributor.getUser().getProfile().getName() + ",\n\n" +

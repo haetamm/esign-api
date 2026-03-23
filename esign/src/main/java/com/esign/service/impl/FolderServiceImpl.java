@@ -10,7 +10,6 @@ import com.esign.helper.Utilities;
 import com.esign.model.*;
 import com.esign.repository.*;
 import com.esign.service.AuthService;
-import com.esign.service.DocumentService;
 import com.esign.service.FolderService;
 import com.esign.specification.DocumentSpecification;
 import com.esign.specification.FolderSpecification;
@@ -41,6 +40,11 @@ public class FolderServiceImpl implements FolderService {
     private final DocumentRepository documentRepository;
     private final Utilities utilities;
 
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public Folder getEntityById(String id) {
+        return findFolderById(id);
+    }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -184,7 +188,7 @@ public class FolderServiceImpl implements FolderService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public FolderResponse rename(String id, FolderRenameRequest request) throws BadRequestException {
+    public FolderResponse rename(String id, RenameRequest request) throws BadRequestException {
         validationUtil.validate(request);
         User user = authService.getAuthenticatedUser();
         Folder folder = findFolderById(id);
@@ -424,7 +428,7 @@ public class FolderServiceImpl implements FolderService {
 
     private Folder findFolderById(String id) {
         return folderRepository.findByIdAndIsDeletedFalse(id)
-                .orElseThrow(() -> new NotFoundException("Folder not found"));
+                .orElseThrow(() -> new NotFoundException(StatusMessage.FOLDER_NOT_FOUND));
     }
 
     private FolderResponse toResponse(Folder folder) {
