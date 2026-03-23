@@ -86,34 +86,4 @@ public class FolderSpecification {
         };
     }
 
-    private List<Predicate> commonPredicates(
-            Root<Folder> root,
-            CriteriaQuery<?> query,
-            CriteriaBuilder cb,
-            SearchFolderRequest request,
-            User user) {
-
-        List<Predicate> predicates = new ArrayList<>();
-
-        // tidak dihapus
-        predicates.add(cb.equal(root.get("isDeleted"), false));
-
-        // filter nama
-        if (request.getName() != null && !request.getName().isBlank()) {
-            predicates.add(cb.like(
-                    cb.upper(root.get("name")),
-                    "%" + request.getName().toUpperCase() + "%"
-            ));
-        }
-
-        return predicates;
-    }
-
-    private Subquery<String> contributorSubquery(CriteriaQuery<?> query, CriteriaBuilder cb, User user) {
-        Subquery<String> subquery = query.subquery(String.class);
-        Root<FolderContributor> contributorRoot = subquery.from(FolderContributor.class);
-        subquery.select(contributorRoot.get("folder").get("id"))
-                .where(cb.equal(contributorRoot.get("user").get("id"), user.getId()));
-        return subquery;
-    }
 }

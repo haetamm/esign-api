@@ -1,7 +1,6 @@
 package com.esign.entities.document;
 
 import com.esign.annotation.document.ValidDoc;
-import com.esign.annotation.profile.ValidImageFile;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -18,6 +17,9 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class DocumentRequest {
+    @NotNull(message = "isRoleRestricted is required")
+    private Boolean isRoleRestricted;
+
     @NotNull(message = "Image is required")
     @ValidDoc(
             maxSize = 2 * 1024 * 1024  // 2MB

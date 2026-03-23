@@ -3,9 +3,13 @@ package com.esign.helper;
 import com.esign.entities.PaginationResponse;
 import com.esign.entities.WebErrorResponse;
 import com.esign.entities.WebResponse;
-import com.esign.entities.role.SearchRoleRequest;
+import com.esign.entities.document.DocumentContributorResponse;
+import com.esign.entities.document.DocumentResponse;
+import com.esign.model.Document;
+import com.esign.repository.DocumentContributorRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,19 +27,11 @@ import java.util.function.Supplier;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class Utilities {
 
-    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    private static final SecureRandom RANDOM = new SecureRandom();
     private static final ObjectMapper objectMapper = new ObjectMapper();
-
-    public static String generateRandomString(int length) {
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            sb.append(CHARACTERS.charAt(RANDOM.nextInt(CHARACTERS.length())));
-        }
-        return sb.toString();
-    }
+    private final DocumentContributorRepository documentContributorRepository;
 
     public <T> ResponseEntity<WebResponse<T>> handleRequest(Supplier<T> requestHandler, HttpStatus status, String message, PaginationResponse paginationResponse) {
         T data = requestHandler.get();
@@ -73,5 +69,34 @@ public class Utilities {
 
         Sort sort = Sort.by(Sort.Direction.fromString(resolvedDirection), resolvedSortBy);
         return PageRequest.of(resolvedPage - 1, resolvedSize, sort);
+    }
+
+    public DocumentResponse documentResponse(Document document) {
+        List<DocumentContributorResponse> contributors = documentContributorRepository
+                .findAllByDocument(document)
+                .stream()
+                .map(c -> DocumentContributorResponse.builder()
+                        .id(c.getId())
+                        .userId(c.getUser().getId())
+                        .username(c.getUser().getUsername())
+                        .status(c.getStatus())
+                        .signedAt(c.getSignedAt() != null ? c.getSignedAt().toString() : null)
+                        .reason(c.getReason())
+                        .build())
+                .toList();
+
+        return DocumentResponse.builder()
+                .id(document.getId())
+                .title(document.getTitle())
+                .fileName(document.getFileName())
+                .fileSize(document.getFileSize())
+                .status(document.getStatus())
+                .folderName(document.getFolder() != null ? document.getFolder().getName() : null)
+                .ownerUsername(document.getOwner().getUsername())
+                .contributors(contributors)
+                .deadline(document.getDeadline() != null ? document.getDeadline().toString() : null)
+                .createdAt(document.getCreatedAt().toString())
+                .updatedAt(document.getUpdatedAt().toString())
+                .build();
     }
 }

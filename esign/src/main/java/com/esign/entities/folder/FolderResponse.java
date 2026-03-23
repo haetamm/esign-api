@@ -1,6 +1,7 @@
 package com.esign.entities.folder;
 
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
@@ -8,7 +9,7 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@SuperBuilder
 public class FolderResponse {
     private String id;
     private String name;
@@ -16,7 +17,6 @@ public class FolderResponse {
     private String parentName;
     private Boolean isPublic;
     private String requiredRole;
-    private List<FolderResponse> children;
     private List<FolderContributorResponse> contributors;
     private String createdAt;
     private String updatedAt;

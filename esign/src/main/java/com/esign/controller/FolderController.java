@@ -57,15 +57,15 @@ public class FolderController {
     @Operation(
             summary = "Get root folders",
             description = "<b>isRole:</b> false/empty = public area, true = role area. <br>" +
-                    "<b>filter:</b> mine = own folders, contributor = added as contributor, empty = all. <br>" +
+                    "<b>filter:</b> mine = own folders + documents, contributor = added as contributor, empty = all. <br>" +
                     "<b>name:</b> filter by folder name."
     )
     @Parameter(name = "isRole", description = "false = public area, true = role area")
-    @Parameter(name = "filter", description = "mine = own folders, contributor = folders where user is contributor, empty = all")
-    @Parameter(name = "name", description = "Filter by folder name")
+    @Parameter(name = "filter", description = "mine = own folders + documents, contributor = folders + documents where user is contributor, empty = all")
+    @Parameter(name = "name", description = "Filter by folder name and document by title")
     @SecurityRequirement(name = "Authorization")
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<WebResponse<List<FolderResponse>>> getRootFolders(
+    public ResponseEntity<WebResponse<RootResponse>> getRootFolders(
             @ParameterObject @ModelAttribute SearchFolderRequest request
     ) {
         return utilities.handleRequest(
@@ -77,12 +77,12 @@ public class FolderController {
 
     @Operation(
             summary = "Get folder by id",
-            description = "<b>filter:</b> mine = own sub folders, contributor = added as contributor, empty = all. <br>" +
-                    "<b>name:</b> filter sub folder by name."
+            description = "<b>filter:</b> mine = own sub folders + documents, contributor = added as contributor, empty = all. <br>" +
+                    "<b>name:</b> filter sub folder by name and document by title."
     )
     @SecurityRequirement(name = "Authorization")
     @GetMapping(path = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<WebResponse<FolderResponse>> getById(
+    public ResponseEntity<WebResponse<SubFolderResponse>> getById(
             @PathVariable String id,
             @ParameterObject @ModelAttribute SearchSubFolderRequest request
     ) {
@@ -102,7 +102,8 @@ public class FolderController {
     @PutMapping(path = "/{id}/rename", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<WebResponse<FolderResponse>> rename(
             @PathVariable String id,
-            @RequestBody FolderRenameRequest request) {
+            @RequestBody FolderRenameRequest request
+    ) {
         return utilities.handleRequest(
                 () -> {
                     try {
@@ -127,7 +128,8 @@ public class FolderController {
     @PutMapping(path = "/{id}/move", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<WebResponse<FolderResponse>> move(
             @PathVariable String id,
-            @RequestBody FolderMoveRequest request) {
+            @RequestBody FolderMoveRequest request
+    ) {
         return utilities.handleRequest(
                 () -> {
                     try {
@@ -228,7 +230,8 @@ public class FolderController {
     @SecurityRequirement(name = "Authorization")
     @GetMapping(path = "/trash", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<WebResponse<List<FolderTrashResponse>>> getTrash(
-            @ParameterObject @ModelAttribute SearchFolderTrashRequest request) {
+            @ParameterObject @ModelAttribute SearchFolderTrashRequest request
+    ) {
         return utilities.handleRequest(
                 () -> folderService.getTrash(request),
                 HttpStatus.OK,

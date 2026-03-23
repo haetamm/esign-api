@@ -45,6 +45,10 @@ public class Document {
     @JoinColumn(name = "folder_id", nullable = true)
     private Folder folder;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "required_role_id", nullable = true)
+    private Role requiredRole;
+
     @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<DocumentContributor> contributors;
 

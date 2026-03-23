@@ -2,19 +2,22 @@ package com.esign.service.impl;
 
 import com.esign.constant.FolderPermissionType;
 import com.esign.constant.StatusMessage;
+import com.esign.entities.document.DocumentResponse;
 import com.esign.entities.folder.*;
 import com.esign.exception.BadRequestException;
 import com.esign.exception.NotFoundException;
+import com.esign.helper.Utilities;
 import com.esign.model.*;
 import com.esign.repository.*;
 import com.esign.service.AuthService;
+import com.esign.service.DocumentService;
 import com.esign.service.FolderService;
+import com.esign.specification.DocumentSpecification;
 import com.esign.specification.FolderSpecification;
 import com.esign.specification.FolderTrashSpecification;
 import com.esign.specification.SubFolderSpecification;
 import com.esign.validation.ValidationUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +37,10 @@ public class FolderServiceImpl implements FolderService {
     private final FolderSpecification folderSpecification;
     private final SubFolderSpecification subFolderSpecification;
     private final FolderTrashSpecification folderTrashSpecification;
+    private final DocumentSpecification documentSpecification;
+    private final DocumentRepository documentRepository;
+    private final Utilities utilities;
+
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -111,7 +118,7 @@ public class FolderServiceImpl implements FolderService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<FolderResponse> getRootFolders(SearchFolderRequest request) {
+    public RootResponse getRootFolders(SearchFolderRequest request) {
         User user = authService.getAuthenticatedUser();
 
         List<String> userRoleIds = userRoleRepository.findByUser(user)
@@ -119,17 +126,27 @@ public class FolderServiceImpl implements FolderService {
                 .map(ur -> ur.getRole().getId())
                 .toList();
 
-        Specification<Folder> spec = folderSpecification.specification(request, user, userRoleIds);
-
-        return folderRepository.findAll(spec)
+        List<FolderResponse> folders = folderRepository
+                .findAll(folderSpecification.specification(request, user, userRoleIds))
                 .stream()
                 .map(this::toResponse)
                 .toList();
+
+        List<DocumentResponse> documents = documentRepository
+                .findAll(documentSpecification.rootSpecification(request, user, userRoleIds))
+                .stream()
+                .map(utilities::documentResponse)
+                .toList();
+
+        return RootResponse.builder()
+                .folders(folders)
+                .documents(documents)
+                .build();
     }
 
     @Transactional(readOnly = true)
     @Override
-    public FolderResponse getById(String id, SearchSubFolderRequest request) {
+    public SubFolderResponse getById(String id, SearchSubFolderRequest request) {
         User user = authService.getAuthenticatedUser();
         Folder folder = findFolderById(id);
         validateAccess(folder, user, null);
@@ -141,9 +158,28 @@ public class FolderServiceImpl implements FolderService {
                 .map(this::toResponse)
                 .toList();
 
-        FolderResponse response = toResponse(folder);
-        response.setChildren(children);
-        return response;
+        FolderResponse base = toResponse(folder);
+
+        // ambil document di folder dgn filter
+        List<DocumentResponse> documents = documentRepository
+                .findAll(documentSpecification.folderSpecification(request, user, folder))
+                .stream()
+                .map(utilities::documentResponse)
+                .toList();
+
+        return SubFolderResponse.builder()
+                .id(base.getId())
+                .name(base.getName())
+                .parentId(folder.getParent() != null ? folder.getParent().getId() : null)
+                .parentName(folder.getParent() != null ? folder.getParent().getName() : null)
+                .isPublic(base.getIsPublic())
+                .requiredRole(base.getRequiredRole())
+                .contributors(base.getContributors())
+                .createdAt(base.getCreatedAt())
+                .updatedAt(base.getUpdatedAt())
+                .children(children)
+                .documents(documents)
+                .build();
     }
 
     @Transactional(rollbackFor = Exception.class)

@@ -11,8 +11,8 @@ import java.util.List;
 
 public interface FolderService {
     FolderResponse create(FolderRequest request) throws BadRequestException, AccessDeniedException;
-    List<FolderResponse> getRootFolders(SearchFolderRequest request);
-    FolderResponse getById(String id, SearchSubFolderRequest request);
+    RootResponse getRootFolders(SearchFolderRequest request);
+    SubFolderResponse getById(String id, SearchSubFolderRequest request);
     FolderResponse rename(String id, FolderRenameRequest request) throws BadRequestException;
     FolderResponse move(String id, FolderMoveRequest request) throws BadRequestException;
     FolderResponse toggleVisibility(String id);

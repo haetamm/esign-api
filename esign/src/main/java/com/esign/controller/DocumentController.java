@@ -15,12 +15,16 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @Slf4j
 @RestController
@@ -45,7 +49,8 @@ public class DocumentController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<WebResponse<DocumentResponse>> upload(
-            @Valid @ModelAttribute DocumentRequest request) {
+            @Valid @ModelAttribute DocumentRequest request
+    ) {
         return utilities.handleRequest(
                 () -> {
                     try {
@@ -57,5 +62,27 @@ public class DocumentController {
                 HttpStatus.CREATED,
                 StatusMessage.SUCCESS_CREATE
         );
+    }
+
+    @Operation(
+            summary = "Get document by id",
+            description = "Retrieve a document file by its ID. If the document is inside a folder, provide folder_id as query parameter. Leave folder_id empty for root documents."
+    )
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/{document_id}")
+    public ResponseEntity<Resource> getDocumentById(
+            @PathVariable String document_id,
+            @RequestParam(required = false) String folder_id
+    ) throws IOException {
+        Resource document = documentService.getDocumentById(folder_id, document_id);
+        Path filePath = document.getFile().toPath();
+        String contentType = Files.probeContentType(filePath);
+        if (contentType == null) contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + document.getFilename() + "\"")
+                .header(HttpHeaders.CONTENT_TYPE, contentType)
+                .body(document);
     }
 }
