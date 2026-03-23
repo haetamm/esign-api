@@ -52,7 +52,7 @@ public class DocumentServiceImpl implements DocumentService {
         User owner = authService.getAuthenticatedUser();
 
         Role requiredRole = null;
-        if ((request.getFolderId() == null || request.getFolderId().isBlank()) || request.getIsRoleRestricted()) {
+        if (request.getIsRoleRestricted()) {
             requiredRole = userRoleRepository.findByUser(owner)
                     .stream()
                     .findFirst()
@@ -159,6 +159,7 @@ public class DocumentServiceImpl implements DocumentService {
                     .stream()
                     .anyMatch(ur -> ur.getRole().getId()
                             .equals(document.getRequiredRole().getId()));
+
             if (!hasRole) {
                 throw new AccessDeniedException(
                         "You don't have the required role '" + document.getRequiredRole().getName() + "' to access this resource"

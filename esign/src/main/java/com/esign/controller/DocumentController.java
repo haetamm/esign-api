@@ -42,7 +42,7 @@ public class DocumentController {
             description = "<b>document:</b> PDF only, max 10MB. <br>" +
                     "<b>folderId:</b> empty = root (public storage). <br>" +
                     "<b>contributorIds:</b> empty = DRAFT, filled = WAITING_SIGNATURE. <br>" +
-                    "<b>deadline:</b> optional, format yyyy-MM-dd HH:mm:ss."
+                    "<b>deadline:</b> format yyyy-MM-dd HH:mm:ss."
     )
     @SecurityRequirement(name = "Authorization")
     @PostMapping(
@@ -89,7 +89,7 @@ public class DocumentController {
 
     @Operation(
             summary = "Rename document",
-            description = "Folder <b>MANAGE</b> permission required. <br>"
+            description = "Requires folder <b>MANAGE</b> permission. <br>"
     )
     @SecurityRequirement(name = "Authorization")
     @PutMapping(path = "/{id}/rename", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
