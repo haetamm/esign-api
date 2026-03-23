@@ -118,17 +118,20 @@ public class DocumentServiceImpl implements DocumentService {
                 throw new AccessDeniedException("Document is inside a folder, provide folder_id");
             }
             // validasi owner untuk root document
-            if (!document.getOwner().getId().equals(owner.getId())) {
-                throw new AccessDeniedException("You are not the owner of this document");
-            }
+//            if (!document.getOwner().getId().equals(owner.getId())) {
+//                throw new AccessDeniedException("You are not the owner of this document");
+//            }
         } else {
             // document dalam folder — validasi folder dan akses
             Folder folder = folderRepository.findByIdAndIsDeletedFalse(folderId)
                     .orElseThrow(() -> new NotFoundException("Folder not found"));
-            folderService.validateAccess(folder, owner, FolderPermissionType.UPLOAD);
+
+            if (!folder.getIsPublic()) {
+                folderService.validateAccess(folder, owner, FolderPermissionType.UPLOAD);
+            }
 
             if (document.getFolder() == null || !folderId.equals(document.getFolder().getId())) {
-                throw new AccessDeniedException("Document does not belong to this folder");
+                throw new NotFoundException("Document does not belong to this folder");
             }
         }
 
