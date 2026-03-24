@@ -16,6 +16,7 @@ public class DocumentResponse {
     private String fileName;
     private Long fileSize;
     private DocumentStatus status;
+    private String folderId;
     private String folderName;
     private String ownerUsername;
     private List<DocumentContributorResponse> contributors;

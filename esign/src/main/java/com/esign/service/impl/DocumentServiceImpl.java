@@ -33,6 +33,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -351,6 +352,26 @@ public class DocumentServiceImpl implements DocumentService {
         List<User> contributors = userRepository.findAllByIdInAndIsEnableTrue(contributorIds);
         if (contributors.size() != contributorIds.size()) {
             throw new NotFoundException("One or more users not found or inactive");
+        }
+
+        // validasi folder contributor jika folder private
+        Folder folder = document.getFolder();
+        if (folder != null && !folder.getIsPublic()) {
+            List<User> invalidFolderAccess = contributors.stream()
+                    .filter(contributor -> {
+                        boolean isOwner = folder.getOwner().getId().equals(contributor.getId());
+                        boolean isContributor = folderContributorRepository
+                                .existsByFolderAndUser(folder, contributor);
+                        return !isOwner && !isContributor;
+                    })
+                    .toList();
+
+            if (!invalidFolderAccess.isEmpty()) {
+                throw new AccessDeniedException(
+                        "Users do not have access to this folder: " +
+                                invalidFolderAccess.stream().map(User::getUsername).collect(Collectors.joining(", "))
+                );
+            }
         }
 
         // validasi role sekaligus

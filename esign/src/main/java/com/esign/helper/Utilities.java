@@ -91,6 +91,7 @@ public class Utilities {
                 .fileName(document.getFileName())
                 .fileSize(document.getFileSize())
                 .status(document.getStatus())
+                .folderId(document.getFolder() != null ? document.getFolder().getId() : null)
                 .folderName(document.getFolder() != null ? document.getFolder().getName() : null)
                 .ownerUsername(document.getOwner().getUsername())
                 .contributors(contributors)
