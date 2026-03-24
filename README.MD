@@ -8,9 +8,9 @@ Digital Signature Service API for document signing
 
 This project supports two runtime modes:
 
-| Mode        | Spring Boot Runtime | Database                 | Configuration Source          |
-|-------------|--------------------|---------------------------|------------------------------|
-| Development | Run from IDE       | PostgreSQL (Docker)      | IDE Environment Variables     |
+| Mode        | Spring Boot Runtime | Database                 | Message Broker       | Configuration Source          |
+|-------------|--------------------|--------------------------|----------------------|------------------------------|
+| Development | Run from IDE       | PostgreSQL (Docker)      | RabbitMQ (Docker)    | IDE Environment Variables     |
 
 
 ---
@@ -19,7 +19,7 @@ This project supports two runtime modes:
 
 Development Mode uses:
 
-- 🐳 Docker → PostgreSQL
+- 🐳 Docker → PostgreSQL, RabbitMQ
 - 💻 IDE → Spring Boot Application
 
 ---
@@ -65,6 +65,22 @@ SMTP_PASSWORD=your_password
 
 ---
 
+### 3.2 RabbitMQ (Development Mode)
+
+RabbitMQ is configured directly in `application.properties` for development:
+
+```properties
+spring.rabbitmq.host=localhost
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
+spring.rabbitmq.listener.simple.retry.enabled=true
+spring.rabbitmq.listener.simple.retry.max-attempts=3
+spring.rabbitmq.listener.simple.retry.initial-interval=2000
+```
+
+---
+
 ## 🐳 4. Start Infrastructure (Docker)
 
 ```bash
@@ -80,6 +96,7 @@ docker ps
 Expected:
 
 - esign-postgres-dev
+- esign-rabbitmq-dev
 
 ---
 
@@ -121,6 +138,21 @@ Use the following configuration:
 Click **Test Connection** → then Finish.
 
 Hibernate will automatically create tables on first application startup.
+
+---
+
+## 🐰 8. RabbitMQ Management Dashboard
+
+Open in browser:
+
+```
+http://localhost:15672
+```
+
+Login credentials:
+
+- Username: `guest`
+- Password: `guest`
 
 ---
 

@@ -17,8 +17,8 @@ public interface FolderService {
     FolderResponse rename(String id, RenameRequest request) throws BadRequestException;
     FolderResponse move(String id, FolderMoveRequest request) throws BadRequestException;
     FolderResponse toggleVisibility(String id);
-    void addContributor(String id, FolderContributorRequest request) throws BadRequestException;
-    void removeContributor(String id, String targetUserId) throws BadRequestException;
+    FolderResponse addContributor(String id, FolderContributorRequest request) throws BadRequestException;
+    FolderResponse removeContributor(String id, String targetUserId) throws BadRequestException;
     List<FolderTrashResponse> getTrash(SearchFolderTrashRequest request);
     FolderResponse restore(String id) throws BadRequestException;
     void delete(String id);

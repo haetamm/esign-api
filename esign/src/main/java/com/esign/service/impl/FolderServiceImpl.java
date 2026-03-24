@@ -262,7 +262,7 @@ public class FolderServiceImpl implements FolderService {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void addContributor(String id, FolderContributorRequest request) throws BadRequestException {
+    public FolderResponse addContributor(String id, FolderContributorRequest request) throws BadRequestException {
         validationUtil.validate(request);
         User user = authService.getAuthenticatedUser();
         Folder folder = findFolderById(id);
@@ -299,11 +299,12 @@ public class FolderServiceImpl implements FolderService {
 
         contributor.setPermissionType(request.getPermissionType());
         folderContributorRepository.save(contributor);
+        return toResponse(folderRepository.save(folder));
     }
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void removeContributor(String id, String targetUserId) throws BadRequestException {
+    public FolderResponse removeContributor(String id, String targetUserId) throws BadRequestException {
         User user = authService.getAuthenticatedUser();
         Folder folder = findFolderById(id);
         validateAccess(folder, user, FolderPermissionType.MANAGE);
@@ -317,6 +318,7 @@ public class FolderServiceImpl implements FolderService {
         }
 
         folderContributorRepository.deleteByFolderAndUser(folder, targetUser);
+        return toResponse(folderRepository.save(folder));
     }
 
     @Transactional(rollbackFor = Exception.class)

@@ -174,34 +174,32 @@ public class FolderController {
     )
     @SecurityRequirement(name = "Authorization")
     @PostMapping(path = "/{id}/contributors", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<WebResponse<Void>> addContributor(
+    public ResponseEntity<WebResponse<FolderResponse>> addContributor(
             @PathVariable String id,
             @RequestBody FolderContributorRequest request
     ) {
         return utilities.handleRequest(() -> {
             try {
-                folderService.addContributor(id, request);
+                return folderService.addContributor(id, request);
             } catch (BadRequestException e) {
                 throw new RuntimeException(e);
             }
-            return null;
         }, HttpStatus.OK, StatusMessage.SUCCESS_CREATE);
     }
 
     @Operation(summary = "Remove contributor from folder")
     @SecurityRequirement(name = "Authorization")
     @DeleteMapping(path = "/{id}/contributors/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<WebResponse<Void>> removeContributor(
+    public ResponseEntity<WebResponse<FolderResponse>> removeContributor(
             @PathVariable String id,
             @PathVariable String userId
     ) {
         return utilities.handleRequest(() -> {
             try {
-                folderService.removeContributor(id, userId);
+                return folderService.removeContributor(id, userId);
             } catch (BadRequestException e) {
                 throw new RuntimeException(e);
             }
-            return null;
         }, HttpStatus.OK, StatusMessage.SUCCESS_DELETE);
     }
 

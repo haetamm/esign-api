@@ -25,6 +25,27 @@ services:
       timeout: 5s
       retries: 5
 
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: esign-rabbitmq-dev
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - esign-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   esign-network:
     driver: bridge
@@ -33,3 +54,5 @@ networks:
 volumes:
   postgres-data:
     name: esign-postgres-data
+  rabbitmq-data:
+    name: esign-rabbitmq-data

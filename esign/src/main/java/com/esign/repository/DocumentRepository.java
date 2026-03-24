@@ -9,4 +9,5 @@ import java.util.Optional;
 
 public interface DocumentRepository extends JpaRepository<Document, String>, JpaSpecificationExecutor<Document> {
     Optional<Document> findByIdAndIsDeletedFalse(String id);
+    Optional<Document> findByIdAndIsDeletedTrue(String id);
 }
