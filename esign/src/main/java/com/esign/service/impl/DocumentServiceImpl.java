@@ -115,7 +115,7 @@ public class DocumentServiceImpl implements DocumentService {
     @Transactional(readOnly = true)
     @Override
     public Resource getDocumentById(String folderId, String documentId) throws MalformedURLException {
-        User owner = authService.getAuthenticatedUser();
+        User user = authService.getAuthenticatedUser();
         Document document = findById(documentId);
 
         if (folderId == null) {
@@ -126,13 +126,7 @@ public class DocumentServiceImpl implements DocumentService {
             Folder folder = folderService.getEntityById(folderId);
 
             if (!folder.getIsPublic()) {
-                boolean isOwner = folder.getOwner().getId().equals(owner.getId());
-                boolean isContributor = folderContributorRepository
-                        .existsByFolderAndUser(folder, owner);
-
-                if (!isOwner && !isContributor) {
-                    throw new AccessDeniedException("You don't have access to this resources");
-                }
+                validateFolderPermissions(folder, user);
             }
 
             if (document.getFolder() == null || !folderId.equals(document.getFolder().getId())) {
@@ -162,13 +156,7 @@ public class DocumentServiceImpl implements DocumentService {
             folder = folderService.getEntityById(document.getFolder().getId());
 
             if (!folder.getIsPublic()) {
-                boolean isOwner = folder.getOwner().getId().equals(user.getId());
-                boolean isContributor = folderContributorRepository
-                        .existsByFolderAndUser(folder, user);
-
-                if (!isOwner && !isContributor) {
-                    throw new AccessDeniedException("You don't have access to this resources");
-                }
+                validateFolderPermissions(folder, user);
             }
         }
 
@@ -213,7 +201,7 @@ public class DocumentServiceImpl implements DocumentService {
             }
 
             if (!newFolder.getIsPublic()) {
-                folderService.validateAccess(newFolder, user, FolderPermissionType.UPLOAD);
+                validateFolderPermissions(newFolder, user);
             }
         }
 
@@ -288,7 +276,7 @@ public class DocumentServiceImpl implements DocumentService {
             if (document.getFolder() != null) {
                 folderService.validateAccess(document.getFolder(), user, FolderPermissionType.MANAGE);
             } else {
-                throw new AccessDeniedException("Only uploader can delete this document");
+                throw new AccessDeniedException("Access denied. You must be the document uploader or have MANAGE permission on the folder to delete this document.");
             }
         }
 
@@ -318,7 +306,9 @@ public class DocumentServiceImpl implements DocumentService {
             if (document.getFolder() != null) {
                 folderService.validateAccess(document.getFolder(), user, FolderPermissionType.MANAGE);
             } else {
-                throw new AccessDeniedException("Only uploader can restore this document");
+                throw new AccessDeniedException(
+                        "Access denied. You must be the document uploader or have MANAGE permission on the folder to delete this document."
+                );
             }
         }
 
@@ -445,6 +435,16 @@ public class DocumentServiceImpl implements DocumentService {
                 document.getStatus() == DocumentStatus.COMPLETED ||
                 document.getStatus() == DocumentStatus.REJECTED) {
             throw new BadRequestException("Document cannot be modified when status is " + document.getStatus());
+        }
+    }
+
+    private void validateFolderPermissions(Folder folder, User user) {
+        boolean isOwner = folder.getOwner().getId().equals(user.getId());
+        boolean isContributor = folderContributorRepository
+                .existsByFolderAndUser(folder, user);
+
+        if (!isOwner && !isContributor) {
+            throw new AccessDeniedException("You don't have access to this resources");
         }
     }
 

@@ -19,6 +19,7 @@ public class DocumentResponse {
     private String folderId;
     private String folderName;
     private String ownerUsername;
+    private String requiredRole;
     private List<DocumentContributorResponse> contributors;
     private String deadline;
     private String createdAt;

@@ -93,6 +93,7 @@ public class Utilities {
                 .status(document.getStatus())
                 .folderId(document.getFolder() != null ? document.getFolder().getId() : null)
                 .folderName(document.getFolder() != null ? document.getFolder().getName() : null)
+                .requiredRole(document.getRequiredRole() != null ? document.getRequiredRole().getName() : null)
                 .ownerUsername(document.getOwner().getUsername())
                 .contributors(contributors)
                 .deadline(document.getDeadline() != null ? document.getDeadline().toString() : null)
