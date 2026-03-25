@@ -5,6 +5,8 @@ import com.esign.model.User;
 
 public interface JwtService {
     String generateToken(User user);
-    boolean verifyJwtToken(String token);
+    String generateRefreshToken(User user);
+    boolean isTokenInvalid(String token);
     JwtClaims getClaimsByToken(String token);
+    String parseToken(String bearerToken);
 }

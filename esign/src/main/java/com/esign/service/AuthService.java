@@ -14,4 +14,6 @@ public interface AuthService {
     String forgetPassword(ForgotPasswordRequest request) throws ValidationCustomException;
     String resetPassword(String token, ResetPasswordRequest request) throws ValidationCustomException, BadRequestException;
     User getAuthenticatedUser();
+    void logout(String accessToken);
+    LoginResponse refreshToken(String refreshToken) throws BadRequestException;
 }

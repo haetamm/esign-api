@@ -11,11 +11,13 @@ import com.esign.exception.BadRequestException;
 import com.esign.exception.NotFoundException;
 import com.esign.exception.ValidationCustomException;
 import com.esign.helper.Utilities;
+import com.esign.service.AuthService;
 import com.esign.service.ProfileService;
 import com.esign.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -37,6 +39,7 @@ public class ProfileController {
     private final UserService userService;
     private final ProfileService profileService;
     private final Utilities utilities;
+    private final AuthService authService;
 
     @Operation(summary = "Update Profile")
     @SecurityRequirement(name = "Authorization")
@@ -79,6 +82,17 @@ public class ProfileController {
                 throw new RuntimeException(e);
             }
         }, HttpStatus.OK, StatusMessage.SUCCESS_UPDATE);
+    }
+
+    @Operation(summary = "Logout")
+    @SecurityRequirement(name = "Authorization")
+    @PostMapping(path = "/logout", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<WebResponse<String>> logout(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        return utilities.handleRequest(() -> {
+            authService.logout(bearerToken);
+            return StatusMessage.SUCCESS_LOGOUT;
+        }, HttpStatus.OK, StatusMessage.SUCCESS_LOGOUT);
     }
 
     @Operation(summary = "Upload profile image")

@@ -2,19 +2,15 @@ package com.esign.security;
 
 import com.esign.constant.ActionType;
 import com.esign.constant.StatusMessage;
-import com.esign.entities.WebErrorResponse;
 import com.esign.helper.Utilities;
 import com.esign.repository.RolePermissionRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -37,6 +33,7 @@ public class AuthorizationFilter extends OncePerRequestFilter {
             "/api/auth/login",
             "/api/auth/forgot-password",
             "/api/auth/reset-password",
+            "/api/auth/refresh-token",
             "/api-docs",
             "/swagger-ui"
     );

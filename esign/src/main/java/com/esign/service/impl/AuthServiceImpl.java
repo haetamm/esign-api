@@ -17,8 +17,6 @@ import com.esign.service.EmailService;
 import com.esign.service.JwtService;
 import com.esign.validation.ValidationUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -36,6 +34,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final TokenRepository tokenRepository;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -48,7 +47,43 @@ public class AuthServiceImpl implements AuthService {
         SecurityContextHolder.getContext().setAuthentication(authenticate);
 
         User user = (User) authenticate.getPrincipal();
-        return getLoginResponse(user);
+        return generateAndSaveTokens(user);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public LoginResponse refreshToken(String refreshToken) throws BadRequestException {
+        Token savedToken = tokenRepository.findByRefreshTokenAndIsRevokedFalse(refreshToken)
+                .orElseThrow(() -> new NotFoundException(StatusMessage.INVALID_OR_EXPIRED_REFRESH_TOKEN));
+
+        User user = savedToken.getUser();
+
+        if (jwtService.isTokenInvalid(refreshToken)) {
+            savedToken.setIsRevoked(true);
+            tokenRepository.save(savedToken);
+            throw new BadRequestException(StatusMessage.REFRESH_TOKEN_EXPIRED);
+        }
+
+        savedToken.setIsRevoked(true);
+        tokenRepository.save(savedToken);
+
+        return generateAndSaveTokens(user);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void logout(String bearerToken) {
+        // Ekstrak raw token dari header "Bearer <token>"
+        String rawToken = jwtService.parseToken(bearerToken);
+
+        Token savedToken = tokenRepository.findByAccessTokenAndIsRevokedFalse(rawToken)
+                .orElseThrow(() -> new NotFoundException(StatusMessage.TOKEN_NOT_FOUND));
+
+        // Revoke access token
+        savedToken.setIsRevoked(true);
+        tokenRepository.save(savedToken);
+
+        SecurityContextHolder.clearContext();
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -71,7 +106,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public String resetPassword(String token, ResetPasswordRequest request) throws BadRequestException {
         validationUtil.validate(request);
-        if (!jwtService.verifyJwtToken(token)) {
+        if (jwtService.isTokenInvalid(token)) {
             throw new BadRequestException("Invalid or expired token");
         }
 
@@ -91,11 +126,23 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new NotFoundException(StatusMessage.USER_NOT_FOUND));
     }
 
-    private LoginResponse getLoginResponse(User user) {
-        String token = jwtService.generateToken(user);
+    private LoginResponse generateAndSaveTokens(User user) {
+        tokenRepository.revokeAllActiveTokenByUserId(user.getId());
+
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        Token token = Token.builder()
+                .user(user)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+        tokenRepository.save(token);
+
         return LoginResponse.builder()
                 .username(user.getUsername())
-                .token(token)
+                .token(accessToken)
+                .refreshToken(refreshToken)
                 .build();
     }
 

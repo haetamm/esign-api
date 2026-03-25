@@ -3,10 +3,7 @@ package com.esign.controller;
 import com.esign.constant.ApiUrl;
 import com.esign.constant.StatusMessage;
 import com.esign.entities.WebResponse;
-import com.esign.entities.user.ForgotPasswordRequest;
-import com.esign.entities.user.LoginRequest;
-import com.esign.entities.user.LoginResponse;
-import com.esign.entities.user.ResetPasswordRequest;
+import com.esign.entities.user.*;
 import com.esign.exception.BadRequestException;
 import com.esign.exception.ValidationCustomException;
 import com.esign.helper.Utilities;
@@ -35,6 +32,19 @@ public class AuthController {
     @PostMapping(path = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<WebResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
         return utilities.handleRequest(() -> authService.login(request), HttpStatus.OK, StatusMessage.SUCCESS_LOGIN);
+    }
+
+    @Operation(summary = "Refresh Token")
+    @SecurityRequirement(name = "Authorization")
+    @PostMapping(path = "/refresh-token", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<WebResponse<LoginResponse>> refreshToken(@RequestBody RefreshTokenRequest request) {
+        return utilities.handleRequest(() -> {
+            try {
+                return authService.refreshToken(request.getRefreshToken());
+            } catch (BadRequestException e) {
+                throw new RuntimeException(e);
+            }
+        }, HttpStatus.OK, StatusMessage.SUCCESS_CREATE);
     }
 
     @Operation(summary = "User forgot password")

@@ -12,6 +12,7 @@ public class StatusMessage {
     public static final String USER_NOT_FOUND = "User Not Found";
     public static final String AVATAR_NOT_FOUND = "Avatar Not Found";
     public static final String FOLDER_NOT_FOUND = "Folder Not Found";
+    public static final String TOKEN_NOT_FOUND = "Token not found or already revoked";
     public static final String ERROR_CREATING_JWT = "Error creating JWT";
     public static final String UNAUTHORIZED = "Unauthorized";
     public static final String ACCESS_DENIED = "Access Denied";
@@ -23,4 +24,7 @@ public class StatusMessage {
     public static final String INTERNAL_SERVER_ERROR = "Internal server error";
     public static final String USERNAME_BEEN_TAKEN = "Username been taken";
     public static final String EMAIL_BEEN_TAKEN = "Email been taken";
+    public static final String INVALID_OR_EXPIRED_REFRESH_TOKEN = "Invalid or expired refresh token";
+    public static final String REFRESH_TOKEN_EXPIRED = "Refresh token expired, please login again";
+    public static final String SUCCESS_LOGOUT = "Logout successfully";
 }

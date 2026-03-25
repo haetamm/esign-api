@@ -1,5 +1,6 @@
 package com.esign.entities.user;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 @Setter
@@ -7,8 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class LoginResponse {
-    private String username;
-    private String token;
+public class RefreshTokenRequest {
+    @NotBlank(message = "Refresh token is required")
     private String refreshToken;
 }
