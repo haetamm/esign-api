@@ -227,8 +227,8 @@ public class FolderController {
     )
     @SecurityRequirement(name = "Authorization")
     @GetMapping(path = "/trash", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<WebResponse<List<FolderTrashResponse>>> getTrash(
-            @ParameterObject @ModelAttribute SearchFolderTrashRequest request
+    public ResponseEntity<WebResponse<TrashResponse>> getTrash(
+            @ParameterObject @ModelAttribute SearchTrashRequest request
     ) {
         return utilities.handleRequest(
                 () -> folderService.getTrash(request),

@@ -19,7 +19,7 @@ public interface FolderService {
     FolderResponse toggleVisibility(String id);
     FolderResponse addContributor(String id, FolderContributorRequest request) throws BadRequestException;
     FolderResponse removeContributor(String id, String targetUserId) throws BadRequestException;
-    List<FolderTrashResponse> getTrash(SearchFolderTrashRequest request);
+    TrashResponse getTrash(SearchTrashRequest request);
     FolderResponse restore(String id) throws BadRequestException;
     void delete(String id);
     void validateAccess(Folder folder, User user, FolderPermissionType required);

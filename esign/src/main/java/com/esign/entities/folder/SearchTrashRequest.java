@@ -7,7 +7,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class SearchFolderTrashRequest {
+public class SearchTrashRequest {
     private String name;
     private String type; // public / role
 }

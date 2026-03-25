@@ -3,6 +3,7 @@ package com.esign.service.impl;
 import com.esign.constant.FolderPermissionType;
 import com.esign.constant.StatusMessage;
 import com.esign.entities.document.DocumentResponse;
+import com.esign.entities.document.DocumentTrashResponse;
 import com.esign.entities.folder.*;
 import com.esign.exception.BadRequestException;
 import com.esign.exception.NotFoundException;
@@ -11,10 +12,7 @@ import com.esign.model.*;
 import com.esign.repository.*;
 import com.esign.service.AuthService;
 import com.esign.service.FolderService;
-import com.esign.specification.DocumentSpecification;
-import com.esign.specification.FolderSpecification;
-import com.esign.specification.FolderTrashSpecification;
-import com.esign.specification.SubFolderSpecification;
+import com.esign.specification.*;
 import com.esign.validation.ValidationUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -22,7 +20,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +39,7 @@ public class FolderServiceImpl implements FolderService {
     private final DocumentSpecification documentSpecification;
     private final DocumentRepository documentRepository;
     private final Utilities utilities;
+    private final DocumentTrashSpecification documentTrashSpecification;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -332,7 +333,7 @@ public class FolderServiceImpl implements FolderService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<FolderTrashResponse> getTrash(SearchFolderTrashRequest request) {
+    public TrashResponse getTrash(SearchTrashRequest request) {
         User user = authService.getAuthenticatedUser();
 
         List<String> userRoleIds = userRoleRepository.findByUser(user)
@@ -340,11 +341,22 @@ public class FolderServiceImpl implements FolderService {
                 .map(ur -> ur.getRole().getId())
                 .toList();
 
-        return folderRepository
+        List<FolderTrashResponse> folders = folderRepository
                 .findAll(folderTrashSpecification.specification(request, user, userRoleIds))
                 .stream()
-                .map(folder -> toTrashResponse(folder, user))
+                .map(folder -> toFolderTrashResponse(folder, user))
                 .toList();
+
+        List<DocumentTrashResponse> documents = documentRepository
+                .findAll(documentTrashSpecification.specification(request, user, userRoleIds))
+                .stream()
+                .map(document -> toDocumentTrashResponse(document, user))
+                .toList();
+
+        return TrashResponse.builder()
+                .folders(folders)
+                .documents(documents)
+                .build();
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -517,7 +529,7 @@ public class FolderServiceImpl implements FolderService {
         }
     }
 
-    private FolderTrashResponse toTrashResponse(Folder folder, User currentUser) {
+    private FolderTrashResponse toFolderTrashResponse(Folder folder, User currentUser) {
         boolean isOwner = folder.getOwner().getId().equals(currentUser.getId());
         boolean hasManage = isOwner || folderContributorRepository
                 .findByFolderAndUser(folder, currentUser)
@@ -535,10 +547,8 @@ public class FolderServiceImpl implements FolderService {
                         .findById(folder.getOriginalParentId());
 
                 if (originalParent.isEmpty()) {
-                    canRestore = false;
                     restoreNote = "Cannot restore, parent folder has been permanently deleted";
                 } else if (originalParent.get().getIsDeleted()) {
-                    canRestore = false;
                     restoreNote = "Parent folder '" + originalParent.get().getName() + "' is still in trash, restore it first";
                 } else {
                     canRestore = true;
@@ -556,6 +566,52 @@ public class FolderServiceImpl implements FolderService {
                 .isPublic(folder.getIsPublic())
                 .deletedAt(folder.getDeletedAt().toString())
                 .deletedBy(folder.getDeletedBy().getUsername())
+                .canRestore(canRestore)
+                .restoreNote(restoreNote)
+                .build();
+    }
+
+    private DocumentTrashResponse toDocumentTrashResponse(Document document, User currentUser) {
+        boolean isOwner = document.getOwner().getId().equals(currentUser.getId());
+        boolean hasManage = isOwner;
+
+        if (!isOwner && document.getFolder() != null) {
+            hasManage = folderContributorRepository
+                    .findByFolderAndUser(document.getFolder(), currentUser)
+                    .map(c -> c.getPermissionType() == FolderPermissionType.MANAGE)
+                    .orElse(false);
+        }
+
+        boolean canRestore = false;
+        String restoreNote = null;
+
+        if (hasManage) {
+            if (document.getOriginalFolderId() == null) {
+                canRestore = true;
+            } else {
+                Optional<Folder> originalFolder = folderRepository
+                        .findById(document.getOriginalFolderId());
+
+                if (originalFolder.isEmpty()) {
+                    restoreNote = "Cannot restore, original folder has been permanently deleted";
+                } else if (originalFolder.get().getIsDeleted()) {
+                    restoreNote = "Original folder '" + originalFolder.get().getName() + "' is still in trash, restore it first";
+                } else {
+                    canRestore = true;
+                }
+            }
+        } else {
+            restoreNote = "Only uploader or MANAGE permission can restore document";
+        }
+
+        return DocumentTrashResponse.builder()
+                .id(document.getId())
+                .name(document.getTitle())
+                .type(document.getRequiredRole() != null ? "ROLE" : "PUBLIC")
+                .requiredRole(document.getRequiredRole() != null ? document.getRequiredRole().getName() : null)
+                .documentStatus(document.getStatus())
+                .deletedAt(document.getDeletedAt().toString())
+                .deletedBy(document.getDeletedBy().getUsername())
                 .canRestore(canRestore)
                 .restoreNote(restoreNote)
                 .build();
