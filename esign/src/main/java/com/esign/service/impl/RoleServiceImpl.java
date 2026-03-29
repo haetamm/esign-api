@@ -50,7 +50,7 @@ public class RoleServiceImpl implements RoleService {
                 .build());
 
         // merge dengan profile permission
-        List<String> permissionIds = mergeWithProfilePermissions(request.getPermissionIds());
+        List<String> permissionIds = mergeWithDefaultPermissions(request.getPermissionIds());
         request.setPermissionIds(permissionIds);
 
         // validasi permission dari request dulu sebelum save
@@ -98,7 +98,7 @@ public class RoleServiceImpl implements RoleService {
         rolePermissionRepository.deleteByRole(role);
 
         // tambah profile permission ke request jika belum ada
-        List<String> permissionIds = mergeWithProfilePermissions(request.getPermissionIds());
+        List<String> permissionIds = mergeWithDefaultPermissions(request.getPermissionIds());
         request.setPermissionIds(permissionIds);
 
         // validasi permission dari request dulu sebelum save
@@ -157,19 +157,21 @@ public class RoleServiceImpl implements RoleService {
         }
     }
 
-    private List<String> mergeWithProfilePermissions(List<String> requestPermissionIds) {
-        List<String> profilePermissionIds = permissionRepository
-                .findAllByUrl(ApiUrl.API_URL + ApiUrl.API_PROFILE)
+    private List<String> mergeWithDefaultPermissions(List<String> requestPermissionIds) {
+        List<String> defaultPermissionIds = permissionRepository
+                .findAllByUrlIn(List.of(
+                        ApiUrl.API_URL + ApiUrl.API_PROFILE,
+                        ApiUrl.API_URL + ApiUrl.API_NOTIFICATION
+                ))
                 .stream()
                 .map(Permission::getId)
-                .filter(id -> !requestPermissionIds.contains(id)) // ← skip kalau sudah ada
+                .filter(id -> !requestPermissionIds.contains(id))
                 .toList();
 
         List<String> merged = new ArrayList<>(requestPermissionIds);
-        merged.addAll(profilePermissionIds);
+        merged.addAll(defaultPermissionIds);
         return merged;
     }
-
     private void isSuperAdmin(Role role) {
         if (Objects.equals(role.getName(), RoleName.SUPER_ADMIN)) {
             throw new AccessDeniedException("Cannot modify SUPER_ADMIN role");

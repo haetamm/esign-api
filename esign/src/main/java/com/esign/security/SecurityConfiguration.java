@@ -44,6 +44,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/socialite").permitAll()
                         .requestMatchers("/api-docs/**", "/swagger-ui/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(authorizationFilter, UsernamePasswordAuthenticationFilter.class)

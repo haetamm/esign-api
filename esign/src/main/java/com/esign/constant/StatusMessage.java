@@ -12,6 +12,7 @@ public class StatusMessage {
     public static final String USER_NOT_FOUND = "User Not Found";
     public static final String AVATAR_NOT_FOUND = "Avatar Not Found";
     public static final String FOLDER_NOT_FOUND = "Folder Not Found";
+    public static final String NOTIFICATION_NOT_FOUND = "Notification Not Found";
     public static final String TOKEN_NOT_FOUND = "Token not found or already revoked";
     public static final String ERROR_CREATING_JWT = "Error creating JWT";
     public static final String UNAUTHORIZED = "Unauthorized";

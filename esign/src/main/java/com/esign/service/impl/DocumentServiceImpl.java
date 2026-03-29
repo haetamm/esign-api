@@ -1,9 +1,6 @@
 package com.esign.service.impl;
 
-import com.esign.constant.ContributorStatus;
-import com.esign.constant.DocumentStatus;
-import com.esign.constant.FolderPermissionType;
-import com.esign.constant.StatusMessage;
+import com.esign.constant.*;
 import com.esign.entities.document.ContributorRequest;
 import com.esign.entities.document.DocumentMoveRequest;
 import com.esign.entities.document.DocumentRequest;
@@ -50,6 +47,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final UserRoleRepository userRoleRepository;
     private final FolderRepository folderRepository;
     private final FolderContributorRepository folderContributorRepository;
+    private final NotificationService notificationService;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -412,16 +410,24 @@ public class DocumentServiceImpl implements DocumentService {
         documentContributorRepository.saveAll(newContributors);
 
         // publish semua email event sekaligus
-        newContributors.forEach(dc ->
-                emailService.sendEmailAfterCommit(
-                        dc.getUser().getEmail(),
-                        "Document Signature Request - " + document.getTitle(),
-                        String.format("Hello " + dc.getUser().getProfile().getName() + ",\n\n" +
-                                "You have been added as a signer for the document: " + document.getTitle() + "\n" +
-                                "Please log in to sign the document.\n\n" +
-                                "Thank you.")
-                )
-        );
+        newContributors.forEach(dc -> {
+            emailService.sendEmailAfterCommit(
+                    dc.getUser().getEmail(),
+                    "Document Signature Request - " + document.getTitle(),
+                    String.format("Hello " + dc.getUser().getProfile().getName() + ",\n\n" +
+                            "You have been added as a signer for the document: " + document.getTitle() + "\n" +
+                            "Please log in to sign the document.\n\n" +
+                            "Thank you.")
+            );
+
+            notificationService.send(
+                    dc.getUser(),
+                    "Document Signature Request",
+                    "You have been added as a signer for the document: " + document.getTitle(),
+                    NotificationType.DOCUMENT_SIGN_REQUEST,
+                    document.getId()
+            );
+        });
     }
 
     private void validateOwner(Document document, User user) {

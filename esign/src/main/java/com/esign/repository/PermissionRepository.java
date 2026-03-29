@@ -9,5 +9,5 @@ import java.util.List;
 public interface PermissionRepository extends JpaRepository<Permission, String> {
     boolean existsByUrlAndAction(String url, ActionType action);
     List<Permission> findAllByIdIn(List<String> ids);
-    List<Permission> findAllByUrl(String url);
+    List<Permission> findAllByUrlIn(List<String> urls);
 }

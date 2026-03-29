@@ -35,7 +35,8 @@ public class AuthorizationFilter extends OncePerRequestFilter {
             "/api/auth/reset-password",
             "/api/auth/refresh-token",
             "/api-docs",
-            "/swagger-ui"
+            "/swagger-ui",
+            "/ws"
     );
 
     @Override

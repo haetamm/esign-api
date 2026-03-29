@@ -8,4 +8,5 @@ public class ApiUrl {
     public static final String API_PROFILE = "/profile";
     public static final String API_FOLDER = "/folder";
     public static final String API_DOCUMENT = "/document";
+    public static final String API_NOTIFICATION = "/notification";
 }
