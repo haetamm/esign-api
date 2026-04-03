@@ -52,7 +52,8 @@ public class DataSeederService {
                 ApiUrl.API_URL + ApiUrl.API_PROFILE,
                 ApiUrl.API_URL + ApiUrl.API_FOLDER,
                 ApiUrl.API_URL + ApiUrl.API_DOCUMENT,
-                ApiUrl.API_URL + ApiUrl.API_NOTIFICATION
+                ApiUrl.API_URL + ApiUrl.API_NOTIFICATION,
+                ApiUrl.API_URL + ApiUrl.API_DASHBOARD
         );
 
         for (String url : urls) {

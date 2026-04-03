@@ -161,7 +161,8 @@ public class RoleServiceImpl implements RoleService {
         List<String> defaultPermissionIds = permissionRepository
                 .findAllByUrlIn(List.of(
                         ApiUrl.API_URL + ApiUrl.API_PROFILE,
-                        ApiUrl.API_URL + ApiUrl.API_NOTIFICATION
+                        ApiUrl.API_URL + ApiUrl.API_NOTIFICATION,
+                        ApiUrl.API_URL + ApiUrl.API_DASHBOARD
                 ))
                 .stream()
                 .map(Permission::getId)

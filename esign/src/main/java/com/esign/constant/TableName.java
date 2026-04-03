@@ -14,4 +14,5 @@ public class TableName {
     public static final String T_DOCUMENT_CONTRIBUTOR = "t_document_contributor";
     public static final String T_SIGNATURE = "t_signature";
     public static final String T_NOTIFICATION = "t_notification";
+    public static final String T_DOCUMENT_ACTIVITIES = "t_document_activities";
 }
