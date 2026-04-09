@@ -1,4 +1,4 @@
-package com.esign.entities.role;
+package com.esign.entities.permission;
 
 import com.esign.constant.ActionType;
 import lombok.*;

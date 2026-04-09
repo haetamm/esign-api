@@ -3,6 +3,7 @@ package com.esign.service.impl;
 import com.esign.constant.ApiUrl;
 import com.esign.constant.RoleName;
 import com.esign.constant.StatusMessage;
+import com.esign.entities.permission.PermissionResponse;
 import com.esign.entities.role.*;
 import com.esign.exception.BadRequestException;
 import com.esign.exception.NotFoundException;

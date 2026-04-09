@@ -1,5 +1,6 @@
 package com.esign.entities.role;
 
+import com.esign.entities.permission.PermissionResponse;
 import lombok.*;
 
 import java.util.List;
