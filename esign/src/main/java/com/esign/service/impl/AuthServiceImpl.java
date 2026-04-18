@@ -17,6 +17,7 @@ import com.esign.service.EmailService;
 import com.esign.service.JwtService;
 import com.esign.validation.ValidationUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -35,6 +36,9 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final TokenRepository tokenRepository;
+
+    @Value("${esign_api.frontend.url}")
+    private String frontendUrl;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -96,7 +100,11 @@ public class AuthServiceImpl implements AuthService {
         user.setResetPasswordToken(token);
         userRepository.save(user);
         String subject = "Reset Password";
-        String text = String.format("To reset your password, click the link below:\n http://localhost:3000/reset-password?token=%s", token);
+        String text = String.format(
+                "To reset your password, click the link below:\n%s/reset-password?token=%s",
+                frontendUrl,
+                token
+        );
         emailService.sendEmailAfterCommit(user.getEmail(), subject, text);
 
         return "Password reset link sent to your email";
