@@ -17,9 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -97,7 +96,7 @@ public class DashboardServiceImpl implements DashboardService {
     ) {
         List<UrgentDocumentResponse> result = new ArrayList<>();
 
-        // dokumen orang lain yg harus current user tanda tangani
+        // Loop 1 - dokumen orang lain yg harus current user tanda tangani
         myContributions.stream()
                 .filter(c -> c.getStatus() == ContributorStatus.PENDING
                         && c.getDocument().getDeadline() != null
@@ -117,12 +116,18 @@ public class DashboardServiceImpl implements DashboardService {
                             .build());
                 });
 
-        // dokumen milik current user yg menunggu orang lain tanda tangan
+        // Kumpulkan id yang sudah masuk dari loop 1
+        Set<String> alreadyAdded = result.stream()
+                .map(UrgentDocumentResponse::getId)
+                .collect(Collectors.toSet());
+
+        // Loop 2 - dokumen milik current user yg menunggu orang lain tanda tangan
         myDocuments.stream()
                 .filter(d -> (d.getStatus() == DocumentStatus.IN_PROGRESS
                         || d.getStatus() == DocumentStatus.WAITING_SIGNATURE)
                         && d.getDeadline() != null
-                        && d.getDeadline().isBefore(threshold))
+                        && d.getDeadline().isBefore(threshold)
+                        && !alreadyAdded.contains(d.getId()))
                 .forEach(d -> {
                     long pending = d.getContributors().stream()
                             .filter(c -> c.getStatus() == ContributorStatus.PENDING)
