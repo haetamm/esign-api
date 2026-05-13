@@ -6,6 +6,7 @@ import com.esign.entities.WebResponse;
 import com.esign.entities.profile.ChangePasswordRequest;
 import com.esign.entities.profile.UpdateProfileRequest;
 import com.esign.entities.profile.UploadAvatarRequest;
+import com.esign.entities.role.RoleDetailResponse;
 import com.esign.entities.user.*;
 import com.esign.exception.BadRequestException;
 import com.esign.exception.NotFoundException;
@@ -62,6 +63,23 @@ public class ProfileController {
                 () -> {
                     try {
                         return userService.getCurrentUser();
+                    } catch (NotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                },
+                HttpStatus.OK,
+                StatusMessage.SUCCESS_RETRIEVE
+        );
+    }
+
+    @Operation(summary = "Get role permission")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping(path = "/permission", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<WebResponse<RoleDetailResponse>> getRolePermission() {
+        return utilities.handleRequest(
+                () -> {
+                    try {
+                        return profileService.getRolePermission();
                     } catch (NotFoundException e) {
                         throw new RuntimeException(e);
                     }

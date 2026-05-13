@@ -3,16 +3,13 @@ package com.esign.service.impl;
 import com.esign.constant.StatusMessage;
 import com.esign.entities.profile.ChangePasswordRequest;
 import com.esign.entities.profile.UploadAvatarRequest;
+import com.esign.entities.role.RoleDetailResponse;
 import com.esign.exception.NotFoundException;
 import com.esign.exception.ValidationCustomException;
-import com.esign.model.Profile;
-import com.esign.model.User;
+import com.esign.model.*;
 import com.esign.repository.ProfileRepository;
 import com.esign.repository.UserRepository;
-import com.esign.service.AuthService;
-import com.esign.service.ProfileService;
-import com.esign.service.StorageService;
-import com.esign.service.UserService;
+import com.esign.service.*;
 import com.esign.validation.ValidationUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -29,6 +26,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +37,7 @@ public class ProfileServiceImpl implements ProfileService {
     private final UserRepository userRepository;
     private final AuthService authService;
     private final StorageService storageService;
+    private final RoleService roleService;
 
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -51,6 +50,14 @@ public class ProfileServiceImpl implements ProfileService {
         }
 
         return new UrlResource(filePath.toUri());
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public RoleDetailResponse getRolePermission() throws NotFoundException {
+        User user = authService.getAuthenticatedUser();
+        String roleId = user.getUserRoles().getFirst().getRole().getId();
+        return roleService.getById(roleId);
     }
 
     @Transactional(rollbackFor = Exception.class)
