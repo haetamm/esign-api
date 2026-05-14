@@ -23,12 +23,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +42,8 @@ public class UserServiceImpl implements UserService {
     private final UserSpecification userSpecification;
     private final Utilities utilities;
     private final AuthService authService;
+
+    private static final Set<String> PROFILE_SORT_FIELDS = Set.of("name");
 
     @Transactional(readOnly = true)
     @Override
@@ -124,12 +126,15 @@ public class UserServiceImpl implements UserService {
     public Page<UserResponse> getAll(SearchUserRequest request) {
         Specification<User> spec = userSpecification.specification(request);
 
+        boolean sortViaSpec = request.getSortBy() != null
+                && PROFILE_SORT_FIELDS.contains(request.getSortBy());
+
         Pageable pageable = utilities.buildPageable(
                 request.getPage(),
                 request.getSize(),
-                request.getSortBy(),
-                request.getDirection(),
-                "createdAt"
+                sortViaSpec ? null : request.getSortBy(),
+                sortViaSpec ? null : request.getDirection(),
+                sortViaSpec ? null : "createdAt"
         );
 
         return userRepository.findAll(spec, pageable)

@@ -21,7 +21,6 @@ import org.springframework.stereotype.Component;
 
 
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -61,12 +60,18 @@ public class Utilities {
     }
 
     public Pageable buildPageable(Integer page, Integer size, String sortBy, String direction, String defaultSortBy) {
-        String resolvedDirection = (direction != null && (direction.equalsIgnoreCase("ASC") || direction.equalsIgnoreCase("DESC")))
-                ? direction : "ASC";
         int resolvedPage = page != null && page > 0 ? page : 1;
         int resolvedSize = size != null ? size : 10;
-        String resolvedSortBy = sortBy != null && !sortBy.isBlank() ? sortBy : defaultSortBy;
+        String resolvedSortBy = sortBy != null && !sortBy.isBlank() ? sortBy
+                : (defaultSortBy != null && !defaultSortBy.isBlank() ? defaultSortBy : null);
 
+        // Kalau tidak ada sortBy sama sekali → PageRequest tanpa sort
+        if (resolvedSortBy == null) {
+            return PageRequest.of(resolvedPage - 1, resolvedSize);
+        }
+
+        String resolvedDirection = (direction != null && (direction.equalsIgnoreCase("ASC") || direction.equalsIgnoreCase("DESC")))
+                ? direction : "ASC";
         Sort sort = Sort.by(Sort.Direction.fromString(resolvedDirection), resolvedSortBy);
         return PageRequest.of(resolvedPage - 1, resolvedSize, sort);
     }
